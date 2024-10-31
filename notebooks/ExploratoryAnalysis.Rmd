@@ -1,0 +1,92 @@
+# Exploratory Analysis
+
+To conduct an exploratory analysis of the data we need to do several things
+- Load the data
+- Check the data types
+- Check for missing values
+- Check for outliers
+- Check for duplicates
+- Check for data distribution
+- Check for data correlation with the target variable to clean data
+- Handle missing, duplicates and outliers
+
+## Load the data
+
+```{r}
+# Load libraries
+library(tidyverse)
+# Load the data
+data <- read.csv("../data/raw/train.csv")
+# View data
+head(data)
+dim(data)
+```
+
+We can already see some columns that will need some processing and analysis to understand its content. We can identify so far:
+- Percentages columns in integers
+- Categorical columns as strings (chr)
+- Boolean columns as integers, which need duplication checking
+
+## Percentages
+
+```{r}
+# Check value limits for percentages colums (contain "percentage" in colname)
+percentages_columns <- colnames(data)[grepl("percentage", colnames(data))]
+summary(data[, percentages_columns])
+```
+
+As we can see the 3rd quartile and max values are pretty far apart, so we can use a boxplot to check for outliers.
+
+```{r}
+# Boxplot for percentages columns
+par(mfrow=c(1,2))
+boxplot(data$area_percentage, main="Area Percentage", col="lightblue")
+boxplot(data$height_percentage, main="Height Percentage", col="orange")
+```
+
+## Categorical
+
+```{r}
+# Check list of values for categorical columns (<chr>)
+categorical_columns <- colnames(data)[sapply(data, is.character)]
+```
+
+```{r}
+# We check the different values of each column by showing unique values.Represent by showing bar plots of each of the columns. x axis being values, y axis being counts. Add colors per column and add a number a top of each bar.
+for (col in categorical_columns) {
+  barplot(table(data[, col]), col=rainbow(length(table(data[, col]))), main=col)
+}
+```
+
+After observing the position variable, we wonder what could it mean and if it is related to distance to the epicenter. To check this we can group by position and check the mean of the target.
+
+```{r}
+# Plot position variable against target variable.
+position_target <- data %>% group_by(position) %>% summarise(mean_target = mean(damage_grade))
+ggplot(position_target, aes(x=position, y=mean_target)) + geom_bar(stat="identity")
+```
+
+Unfortunately there does not seem to be a clear relationship between position and damage_grade.
+
+We also want to check what could foundation types mean and wether some are "stronger" or better than others which could be useful for preprocessing data.
+
+```{r}
+# Plot foundation_type variable against target variable.
+foundation_target <- data %>% group_by(foundation_type) %>% summarise(n=n(), mean_target = mean(damage_grade))
+foundation_target
+```
+
+```{r}
+# barplot for each foundation type
+ggplot(foundation_target, aes(x=foundation_type, y=mean_target)) + geom_bar(stat="identity")
+```
+
+We believe foundation type is closely related to damage grade, not only because of intuition but because the mean damage grade is different for each foundation type. We will keep this in mind for the next stages.
+
+### Other categorical columns
+
+As far as other categorical columns go, `plan_configuration` and `legal_ownership_status` are very clear to us that they will only add noise or non-valuable information to further analysis as a very high percentage (close to 100%) are of the same value and we believe will only increase compute time when building predictive models.
+
+As for the other columns, we will keep them for now but do not see any clear correlation with the target variable just yet from intuition only.
+
+## Boolean
