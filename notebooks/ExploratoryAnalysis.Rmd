@@ -4,11 +4,10 @@ To conduct an exploratory analysis of the data we need to do several things
 - Load the data
 - Check the data types
 - Check for missing values
-- Check for outliers
 - Check for duplicates
 - Check for data distribution
 - Check for data correlation with the target variable to clean data
-- Handle missing, duplicates and outliers
+
 
 ## Load the data
 
@@ -27,7 +26,26 @@ We can already see some columns that will need some processing and analysis to u
 - Categorical columns as strings (chr)
 - Boolean columns as integers, which need duplication checking
 
-## Percentages
+We will take this into account later for data visualization and interpretation
+
+
+## Check duplicate values
+
+
+## Check Null values
+
+
+## Data normalization
+
+
+## Data correlation
+
+
+## Data visualization and interpretation
+
+Now we will try to extract some meaning behind the data, to understand it better before we proceed with the processing. This is due to potential significant information being hidden in the data that we can use to improve our models down the line.
+
+### Percentages
 
 ```{r}
 # Check value limits for percentages colums (contain "percentage" in colname)
@@ -43,8 +61,9 @@ par(mfrow=c(1,2))
 boxplot(data$area_percentage, main="Area Percentage", col="lightblue")
 boxplot(data$height_percentage, main="Height Percentage", col="orange")
 ```
+We expected to extract significant information from these plots, imagining it would indicate the area of the building damaged and a similar meaning for height. However seeing that the 3rd quartile are low for both and maximum values are not that much higher either, we see no descriptive conclusion for this data.
 
-## Categorical
+### Categorical
 
 ```{r}
 # Check list of values for categorical columns (<chr>)
@@ -83,10 +102,10 @@ ggplot(foundation_target, aes(x=foundation_type, y=mean_target)) + geom_bar(stat
 
 We believe foundation type is closely related to damage grade, not only because of intuition but because the mean damage grade is different for each foundation type. We will keep this in mind for the next stages.
 
-### Other categorical columns
+#### Other categorical columns
 
 As far as other categorical columns go, `plan_configuration` and `legal_ownership_status` are very clear to us that they will only add noise or non-valuable information to further analysis as a very high percentage (close to 100%) are of the same value and we believe will only increase compute time when building predictive models.
 
 As for the other columns, we will keep them for now but do not see any clear correlation with the target variable just yet from intuition only.
 
-## Boolean
+### Boolean
