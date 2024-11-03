@@ -8,6 +8,7 @@ To conduct an exploratory analysis of the data we need to do several things - Lo
 # Load libraries
 library(tidyverse)
 library(corrplot)
+library(dplyr)
 # Load the data
 data <- read.csv("../data/raw/train.csv")
 # View data
@@ -144,7 +145,90 @@ As far as other categorical columns go, `plan_configuration` and `legal_ownershi
 
 As for the other columns, we will keep them for now but do not see any clear correlation with the target variable just yet from intuition only.
 
-### Boolean
+### Binary
+
+```{r}
+# Check list of values for binary columns 0 or 1 (<int>)
+binary_columns <- data %>% select_if(~all(. %in% c(0,1))) %>% colnames()
+binary_columns
+```
+
+We can appreciate that the binary columns are all related to the superstructure
+of the building and the secondary use of the building. 
+
+Now we will check if this columns might represent a "camouflaged" categorical
+variable. 
+
+```{r}
+superstructure_columns <- colnames(data)[grepl("has_superstructure", colnames(data))]
+secondary_use_columns <- colnames(data)[grepl("has_secondary_use", colnames(data))]
+# Is there a row with all superstructure columns as 0?
+no_superstructure_rows <- nrow(data[rowSums(data[, superstructure_columns]) == 0, ])
+no_superstructure_rows
+# Is there a row with all secondary use columns as 0?
+no_secondary_use_rows <- nrow(data[rowSums(data[, secondary_use_columns]) == 0, ])
+no_secondary_use_rows
+```
+
+We can see that this values are not "camouflaged" categorical, as there are
+rows with all values as 0.
+
+Now we will check if there are cases that have more than one superstructure or
+secondary use.
+
+```{r}
+# Check if there are rows with more than one superstructure
+more_than_one_superstructure <- nrow(data[rowSums(data[, superstructure_columns]) > 1, ])
+more_than_one_superstructure
+# Check if there are rows with more than one secondary use
+more_than_one_secondary_use <- nrow(data[rowSums(data[, secondary_use_columns]) > 1, ])
+more_than_one_secondary_use
+```
+
+As a last step we will check the distribution of the binary columns, considering
+that there can be multiple combinations of these columns.
+
+```{r}
+# Calculate unique combinations for superstructure columns
+superstructure_combinations <- data %>%
+  select(all_of(superstructure_columns)) %>%
+  mutate(combination = apply(., 1, paste, collapse = "-")) %>%
+  count(combination) %>%
+  mutate(percentage = n / sum(n) * 100)
+superstructure_combinations
+# Plot distribution of superstructure combinations
+superstructure_labels <- ifelse(superstructure_combinations$percentage > 5, paste0(superstructure_combinations$combination, " (", round(superstructure_combinations$percentage, 1), "%)"),
+"")
+pie(
+  superstructure_combinations$percentage,
+  labels = superstructure_labels,
+  main = "Distribution of Superstructure Combinations",
+  col = rainbow(nrow(superstructure_combinations)),
+  border = FALSE
+)
+
+# Calculate unique combinations for secondary use columns
+secondary_use_combinations <- data %>%
+  select(all_of(secondary_use_columns)) %>%
+  mutate(combination = apply(., 1, paste, collapse = "-")) %>%
+  count(combination) %>%
+  mutate(percentage = n / sum(n) * 100)
+secondary_use_combinations
+# Plot distribution of secondary use combinations
+secondary_use_labels <- ifelse(secondary_use_combinations$percentage > 5, paste0(secondary_use_combinations$combination, " (", round(secondary_use_combinations$percentage, 1), "%)"),
+"")
+pie(
+  secondary_use_combinations$percentage,
+  labels = secondary_use_labels,
+  main = "Distribution of Secondary Use Combinations",
+  col = rainbow(nrow(secondary_use_combinations)),
+  border = FALSE
+)
+```
+
+We can see that the distribution of the superstructure and secondary use columns
+is quite varied. For superstructure columns, the most common combinations are
+`mud_mortar_stone` (23.9%), `mud_mortar_stone` with `timber` (14.6%), `cement_mortar_brick` (8.2%) and no superstructure (6.7%). For secondary use columns, the most common combinations are no secondary use (84.6%) and `agriculture` with `rental` (5.1%).
 
 ## Analysis with specialized utilities
 
