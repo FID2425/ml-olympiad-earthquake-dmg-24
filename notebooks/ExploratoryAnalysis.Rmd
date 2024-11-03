@@ -1,19 +1,13 @@
 # Exploratory Analysis
 
-To conduct an exploratory analysis of the data we need to do several things
-- Load the data
-- Check the data types
-- Check for missing values
-- Check for duplicates
-- Check for data distribution
-- Check for data correlation with the target variable to clean data
-- Visualize and interpret the data to understand it better
+To conduct an exploratory analysis of the data we need to do several things - Load the data - Check the data types - Check for missing values - Check for duplicates - Check for data distribution - Check for data correlation with the target variable to clean data - Visualize and interpret the data to understand it better
 
 ## Load the data
 
 ```{r}
 # Load libraries
 library(tidyverse)
+library(corrplot)
 # Load the data
 data <- read.csv("../data/raw/train.csv")
 # View data
@@ -21,13 +15,9 @@ head(data)
 dim(data)
 ```
 
-We can already see some columns that will need some processing and analysis to understand its content. We can identify so far:
-- Percentages columns in integers
-- Categorical columns as strings (chr)
-- Boolean columns as integers, which need duplication checking
+We can already see some columns that will need some processing and analysis to understand its content. We can identify so far: - Percentages columns in integers - Categorical columns as strings (chr) - Boolean columns as integers, which need duplication checking
 
 We will take this into account later for data visualization and interpretation
-
 
 ## Check duplicate values
 
@@ -42,7 +32,6 @@ duplicated_columns
 
 Fortunately the data seems to be quite clean and does not contain any duplicates, or exact duplicates. But some columns such as has_superstructure_rc_non_engineered and has_superstructure_rc_engineered seemed to be opposite in description and presented the same first few values, so we will need to look further into them later on.
 
-
 ## Check Null values
 
 ```{r}
@@ -53,9 +42,39 @@ missing_values
 
 Same as previously, data seems to be quite clean in this regard with no missing values.
 
-
 ## Data correlation
 
+### Linear correlation
+
+For this dataset, we will check the correlation of the data with the target variable, which is `damage_grade`. We will use the correlation function to check the correlation of the data with the target variable.
+
+```{r}
+# Get a copy of the data
+data_copy <- data
+# Get categorical columns
+categorical_columns <- colnames(data)[sapply(data, is.character)]
+# Convert categorical columns to factors and then to numeric
+data_copy[categorical_columns] <- lapply(data_copy[categorical_columns], as.factor)
+data_copy[categorical_columns] <- lapply(data_copy[categorical_columns], as.numeric)
+# Check correlation 
+correlation <- cor(data_copy)
+# Plot correlation matrix without labels
+corrplot(correlation, method = "color", order = "hclust", tl.col = "black", tl.pos = 'n')
+# Check correlation with target variable
+correlation_target <- correlation["damage_grade",]
+# Plot correlation with target variable 
+barplot(correlation_target, main="Correlation with target variable", col="lightblue", )
+# Get columns with an absolute correlation higher than 0.2
+columns_correlation <- correlation_target[abs(correlation_target) > 0.2]
+columns_correlation
+```
+
+With this information we can see that the columns with the highest correlation are:
+
+-   `age` (0.269): We can infer that the age of the building is a significant factor in the damage grade, which is expected as older buildings are more likely to be damaged.
+-   `area_percentage` (-0.325): Larger area percentages are correlated with lower damage grades, which could mean that larger buildings might experience less relative damage.
+-   `roof_type` (-0.324): We can infer that the roof type is a significant factor in the damage grade, which is expected as some roof types are more resistant to earthquakes.
+-   `has_superstructure_mud_mortar_stone` (0.393), `has_superstructure_cement_mortar_brick` (-0.415), `has_superstructure_rc_non_engineered` (-0.221) and `has_superstructure_rc_engineered` (-0.259): We can infer that the superstructure material is a significant factor in the damage grade, which is expected as some materials are more resistant to earthquakes.
 
 ## Data visualization and interpretation
 
@@ -77,6 +96,7 @@ par(mfrow=c(1,2))
 boxplot(data$area_percentage, main="Area Percentage", col="lightblue")
 boxplot(data$height_percentage, main="Height Percentage", col="orange")
 ```
+
 We expected to extract significant information from these plots, imagining it would indicate the area of the building damaged and a similar meaning for height. However seeing that the 3rd quartile are low for both and maximum values are not that much higher either, we see no descriptive conclusion for this data.
 
 ### Categorical
@@ -126,8 +146,6 @@ As for the other columns, we will keep them for now but do not see any clear cor
 
 ### Boolean
 
-
 ## Analysis with specialized utilities
-
 
 ## Conclusions
