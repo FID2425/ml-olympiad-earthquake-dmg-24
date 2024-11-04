@@ -264,17 +264,46 @@ This type of analysis is very common in the data science field, so there are man
 In this section we will use it to both confirm that our analysis was correct and to see if anything else can be extracted from
 
 ```{r}
+help(create_report)
 create_report(data)
 ``` 
 
-```{r}
-DataExplorer::plot_str(data)
-DataExplorer::plot_missing(data)
-DataExplorer::plot_correlation(data)
-DataExplorer::plot_histogram(data)
-DataExplorer::plot_boxplot(data, by="damage_grade")
-DataExplorer::plot_bar(data)
-DataExplorer::plot_scatterplot(data, by="damage_grade")
-```
+The generated report is available in this folder and can be consulted for further detail. For the most part it does not provide any information that we have not already extracted. However we did notice one additional point regarding secondary use columns, which is that some of them present almost no variation (very close to 0 buildings presenting that use) and could be considered for removal if reduction of dimensionality is needed.
+
+Furthermore it presented us with an analysis on PCA (Principal Component Analysis) which we will consider for data preprocessing on the next steps.
 
 ## Conclusions
+
+After conducting the exploratory analysis we can draw the following conclusions, which are separated on this subsections:
+
+### Data quality
+Data is clean and does not contain any missing values or duplicates
+
+### Data variety
+Data contains a mix of numeric, categorical and binary columns, although not very varied in nature.
+
+### Data importance
+Columns with the highest correlation to the target variable are:
+- `age` (0.269)
+- `area_percentage` (-0.325)
+- `roof_type` (-0.324)
+- `has_superstructure_mud_mortar_stone` (0.393)
+- `has_superstructure_cement_mortar_brick` (-0.415)
+- `has_superstructure_rc_engineered` (-0.259)
+- `has_superstructure_rc_non_engineered` (-0.221)
+- `has_secondary_use_hotel` (0.291)
+
+Although other columns may still possess significant value as combined might present a higher correlation (e.g. A combination of superstructure materials making the buildings more resistant).
+
+There are however, a few columns we identified that could be removed if needed to reduce dimensionality or noise in the data, as we believe it wouldn't affect much the results. Taking in mind of course that building preliminary models to confirm this would be beneficial still:
+- `building_id`
+- `plan_configuration`
+- `legal_ownership_status`
+- `count_families`
+- `has_secondary_use_use_police`
+- `has_secondary_use_gov_office`
+- `has_secondary_use_health_post`
+- `has_secondary_use_industry`
+- `has_secondary_use_institution`
+- `has_secondary_use_school`
+- `has_secondary_use_other`
