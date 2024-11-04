@@ -9,6 +9,7 @@ To conduct an exploratory analysis of the data we need to do several things - Lo
 library(tidyverse)
 library(corrplot)
 library(dplyr)
+library(DataExplorer)
 # Load the data
 data <- read.csv("../data/raw/train.csv")
 # View data
@@ -16,7 +17,10 @@ head(data)
 dim(data)
 ```
 
-We can already see some columns that will need some processing and analysis to understand its content. We can identify so far: - Percentages columns in integers - Categorical columns as strings (chr) - Boolean columns as integers, which need duplication checking
+We can already see some columns that will need some processing and analysis to understand its content. We can identify so far:
+- Numeric columns representing continuous integer and percentages values
+- Categorical columns as strings (chr)
+- Boolean columns as integers, which need duplication checking
 
 We will take this into account later for data visualization and interpretation
 
@@ -81,7 +85,13 @@ With this information we can see that the columns with the highest correlation a
 
 Now we will try to extract some meaning behind the data, to understand it better before we proceed with the processing. This is due to potential significant information being hidden in the data that we can use to improve our models down the line.
 
-### Percentages
+### Numeric
+
+There are two kind of numeric columns:
+- Percentages
+- Continuous Integer values
+
+#### Percentages
 
 ```{r}
 # Check value limits for percentages colums (contain "percentage" in colname)
@@ -98,7 +108,24 @@ boxplot(data$area_percentage, main="Area Percentage", col="lightblue")
 boxplot(data$height_percentage, main="Height Percentage", col="orange")
 ```
 
-We expected to extract significant information from these plots, imagining it would indicate the area of the building damaged and a similar meaning for height. However seeing that the 3rd quartile are low for both and maximum values are not that much higher either, we see no descriptive conclusion for this data.
+Knowing from the data description that these percentages represent a normalization of the area and height of the buildings we can see that most of the buildings affected probably were residential.
+
+#### Continuous Integer values
+
+```{r}
+# Columns are: age, building_id, count_floors_pre_eq, count_families
+continuous_columns <- colnames(data)[sapply(data, is.integer) & !grepl("percentage", colnames(data))]
+# Visualize as historgam
+ggplot(data, aes(x=age)) + geom_histogram(binwidth=1, fill="lightblue", color="black", alpha=0.7) + labs(title="Age Histogram", x="Age", y="Count")
+ggplot(data, aes(x=count_floors_pre_eq)) + geom_histogram(binwidth=1, fill="lightblue", color="black", alpha=0.7) + labs(title="Count Floors Pre EQ Histogram", x="Count Floors Pre EQ", y="Count")
+ggplot(data, aes(x=count_families)) + geom_histogram(binwidth=1, fill="lightblue", color="black", alpha=0.7) + labs(title="Count Families Histogram", x="Count Families", y="Count")
+ggplot(data, aes(x=building_id)) + geom_histogram(binwidth=1, fill="lightblue", color="black", alpha=0.7) + labs(title="Building ID Histogram", x="Building ID", y="Count")
+```
+On the data visualized we draw a few conclusions:
+- Most of the buildings are relatively new, with the most common value being 0, which could mean that the data is not accurate or that most of the buildings are new. It could also mean that prior processing has been applied to this data and buildings with unknown age have been assigned a value of 0.
+- Most of the buildings have 2 floors, which is expected as most buildings are though to be residential from prior data.
+- Most of the buildings have 1 family, which is expected as most buildings are though to be residential from prior data. On this column, we believe it could be removed from the dataset when building predictive models as it does not seem to be very informative nor contain much variation.
+- Finally, on the building_id column, it is clear that it refers to an index, thus must be removed for further analysis.
 
 ### Categorical
 
@@ -231,5 +258,23 @@ is quite varied. For superstructure columns, the most common combinations are
 `mud_mortar_stone` (23.9%), `mud_mortar_stone` with `timber` (14.6%), `cement_mortar_brick` (8.2%) and no superstructure (6.7%). For secondary use columns, the most common combinations are no secondary use (84.6%) and `agriculture` with `rental` (5.1%).
 
 ## Analysis with specialized utilities
+
+This type of analysis is very common in the data science field, so there are many libraries that can help us with this task. One of them is the `DataExplorer` library, which provides a set of functions to visualize and interpret the data.
+
+In this section we will use it to both confirm that our analysis was correct and to see if anything else can be extracted from
+
+```{r}
+create_report(data)
+``` 
+
+```{r}
+DataExplorer::plot_str(data)
+DataExplorer::plot_missing(data)
+DataExplorer::plot_correlation(data)
+DataExplorer::plot_histogram(data)
+DataExplorer::plot_boxplot(data, by="damage_grade")
+DataExplorer::plot_bar(data)
+DataExplorer::plot_scatterplot(data, by="damage_grade")
+```
 
 ## Conclusions
