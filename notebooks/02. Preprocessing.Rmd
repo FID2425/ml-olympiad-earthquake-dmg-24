@@ -15,7 +15,6 @@ dim(data)
 str(data)
 ```
 
-
 ## Column elimination
 According to the conclusions of the Exploratory Analysis, we will eliminate the following columns:
 - `building_id`
@@ -45,6 +44,128 @@ As we can see, after eliminating the mentioned columns, the data has 26 columns.
 ## Label encoding
 
 ## Column unification
+
+### Categorical columns
+
+```{r}
+# show only chr type columns
+# data %>% select_if(is.character) %>% colnames()
+
+## plan_configuration legal_ownership_status
+
+# show unique values in each column
+data %>% select_if(is.character) %>% map(unique)
+#### Label encoding
+encoded_df <- data %>%
+  mutate(
+    across(
+      c(
+        land_surface_condition,
+        foundation_type,
+        roof_type,
+        ground_floor_type,
+        other_floor_type,
+        position
+      ),
+      ~ as.numeric(factor(.))
+    )
+  )
+
+# Función para crear y mostrar una tabla de equivalencias por cada columna
+# crear_tabla_equivalencias <- function(col) {
+#   tabla_equivalencias <- tibble(
+#     original = unique(data[[col]]),
+#     encoded = as.numeric(factor(unique(data[[col]])))
+#   )
+#   cat("\n### Tabla de equivalencias para:", col, "\n")
+#   print(tabla_equivalencias)
+# }
+
+# Generar una tabla por cada columna
+# walk(
+#   c("land_surface_condition", "foundation_type", "roof_type", "ground_floor_type", "other_floor_type", "position"),
+#   crear_tabla_equivalencias
+# )
+
+# Ver las primeras 10 filas de las columnas codificadas
+# print(encoded_df %>% select(land_surface_condition, foundation_type, roof_type, ground_floor_type, other_floor_type, position) %>% head(10))
+
+```
+
+#### land_surface_condition
+
+| Original | Encoded |
+|----------|---------|
+| o        | 2       |
+| t        | 3       |
+| n        | 1       |
+
+#### foundation_type
+
+| Original | Encoded |
+|----------|---------|
+| r        | 3       |
+| i        | 2       |
+| u        | 4       |
+| w        | 5       |
+| h        | 1       |
+
+#### roof_type
+
+| Original | Encoded |
+|----------|---------|
+| x        | 3       |
+| n        | 1       |
+| q        | 2       |
+
+#### ground_floor_type
+
+| Original | Encoded |
+|----------|---------|
+| f        | 1       |
+| v        | 3       |
+| x        | 4       |
+| m        | 2       |
+| z        | 5       |
+
+#### other_floor_type
+
+| Original | Encoded |
+|----------|---------|
+| q        | 2       |
+| s        | 3       |
+| j        | 1       |
+| x        | 4       |
+
+#### position
+
+| Original | Encoded |
+|----------|---------|
+| s        | 3       |
+| t        | 4       |
+| j        | 1       |
+| o        | 2       |
+
+### Binary columns
+
+Unify Has_secondary_use
+
+```{r}
+unified_df <- encoded_df %>%
+  mutate(has_secondary_use = if_else(
+    rowSums(select(., starts_with("has_secondary_use"))) > 0, 
+    1, 
+    0
+  )) %>%
+  select(-starts_with("has_secondary_use_"))
+
+# print(unified_df %>% select(has_secondary_use) %>% head(10))
+# Número de muestras con has_secondary_use = 0
+print(unified_df %>% filter(has_secondary_use == 0) %>% nrow())
+
+# Número de muestras con has_secondary_use = 1
+print(unified_df %>% filter(has_secondary_use == 1) %>% nrow())
+````
 
 ## Principal Component Analysis
 
