@@ -17,6 +17,30 @@ str(data)
 
 
 ## Column elimination
+According to the conclusions of the Exploratory Analysis, we will eliminate the following columns:
+- `building_id`
+- `plan_configuration`
+- `legal_ownership_status`
+- `count_families`
+- `has_secondary_use_use_police`
+- `has_secondary_use_gov_office`
+- `has_secondary_use_health_post`
+- `has_secondary_use_industry`
+- `has_secondary_use_institution`
+- `has_secondary_use_school`
+- `has_secondary_use_other`
+
+```{r}
+data <- data %>%
+  select(-building_id, -plan_configuration, -legal_ownership_status, -count_families, -has_secondary_use_use_police, -has_secondary_use_gov_office, -has_secondary_use_health_post, -has_secondary_use_industry, -has_secondary_use_institution, -has_secondary_use_school, -has_secondary_use_other)
+
+# View data
+head(data)
+dim(data)
+str(data)
+```
+
+As we can see, after eliminating the mentioned columns, the data has 26 columns.
 
 ## Label encoding
 
