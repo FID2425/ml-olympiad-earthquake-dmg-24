@@ -1,0 +1,27 @@
+# 02. Preprocessing
+
+## Setup
+
+```{r}
+# Load libraries
+library(tidyverse)
+
+# Load the data
+data <- read.csv("../data/raw/train.csv")
+
+# View data
+head(data)
+dim(data)
+str(data)
+```
+
+
+## Column elimination
+
+## Label encoding
+
+## Column unification
+
+## Principal Component Analysis
+
+## Imbalanced data handling

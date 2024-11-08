@@ -1,8 +1,8 @@
-# Exploratory Analysis
+# 01. Exploratory Analysis
 
 To conduct an exploratory analysis of the data we need to do several things - Load the data - Check the data types - Check for missing values - Check for duplicates - Check for data distribution - Check for data correlation with the target variable to clean data - Visualize and interpret the data to understand it better
 
-## Load the data
+## Setup
 
 ```{r}
 # Load libraries
@@ -10,11 +10,14 @@ library(tidyverse)
 library(corrplot)
 library(dplyr)
 library(DataExplorer)
+
 # Load the data
 data <- read.csv("../data/raw/train.csv")
+
 # View data
 head(data)
 dim(data)
+str(data)
 ```
 
 We can already see some columns that will need some processing and analysis to understand its content. We can identify so far:
