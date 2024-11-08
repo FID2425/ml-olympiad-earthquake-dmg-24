@@ -43,10 +43,6 @@ As we can see, after eliminating the mentioned columns, the data has 26 columns.
 
 ## Label encoding
 
-## Column unification
-
-### Categorical columns
-
 ```{r}
 # show only chr type columns
 # data %>% select_if(is.character) %>% colnames()
@@ -55,7 +51,8 @@ As we can see, after eliminating the mentioned columns, the data has 26 columns.
 
 # show unique values in each column
 data %>% select_if(is.character) %>% map(unique)
-#### Label encoding
+
+
 encoded_df <- data %>%
   mutate(
     across(
@@ -146,11 +143,16 @@ encoded_df <- data %>%
 | j        | 1       |
 | o        | 2       |
 
-### Binary columns
 
-Unify Has_secondary_use
+## Column unification
+### Unify Has_secondary_use columns
 
 ```{r}
+## Remove the has_secondary_use column
+encoded_df <- encoded_df %>% select(-has_secondary_use)
+
+# Hemos llegado a la conclusión de que está mal, porque al recalcular la columna con la misma lógica, obtenemos un número diferente de muestras negativas
+
 unified_df <- encoded_df %>%
   mutate(has_secondary_use = if_else(
     rowSums(select(., starts_with("has_secondary_use"))) > 0, 
