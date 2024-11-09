@@ -43,11 +43,19 @@ As we can see, after eliminating the mentioned columns, the data has 26 columns.
 
 ## Label encoding
 
+In this document, we will be performing label encoding on character-type columns. Label encoding converts categorical data into numerical values, allowing machine learning algorithms to handle non-numeric data more effectively.
+
+### Identify character-type columns
+
 ```{r}
 # show only chr type columns
-# data %>% select_if(is.character) %>% colnames()
+data %>% select_if(is.character) %>% colnames()
+```
 
-## plan_configuration legal_ownership_status
+To ensure we understand the contents of the character-type columns, we will display the unique values within each column. Then, we will use the `mutate` function in combination with `across` to apply label encoding to the selected columns. We convert each category into a numerical representation using the `factor` function, which assigns integer codes to each unique value.
+
+
+```{r}
 
 # show unique values in each column
 data %>% select_if(is.character) %>% map(unique)
@@ -67,26 +75,31 @@ encoded_df <- data %>%
       ~ as.numeric(factor(.))
     )
   )
+```
 
+
+
+### Creating Equivalence Tables for Each Encoded Column
+
+To understand the mapping between original and encoded values, we create a function that generates and prints equivalence tables for each column. This function outputs a table showing the original category and its corresponding numerical code.
+
+
+```{r}
 # Función para crear y mostrar una tabla de equivalencias por cada columna
-# crear_tabla_equivalencias <- function(col) {
-#   tabla_equivalencias <- tibble(
-#     original = unique(data[[col]]),
-#     encoded = as.numeric(factor(unique(data[[col]])))
-#   )
-#   cat("\n### Tabla de equivalencias para:", col, "\n")
-#   print(tabla_equivalencias)
-# }
+ crear_tabla_equivalencias <- function(col) {
+   tabla_equivalencias <- tibble(
+     original = unique(data[[col]]),
+     encoded = as.numeric(factor(unique(data[[col]])))
+   )
+   cat("\n### Tabla de equivalencias para:", col, "\n")
+   print(tabla_equivalencias)
+ }
 
 # Generar una tabla por cada columna
-# walk(
-#   c("land_surface_condition", "foundation_type", "roof_type", "ground_floor_type", "other_floor_type", "position"),
-#   crear_tabla_equivalencias
-# )
-
-# Ver las primeras 10 filas de las columnas codificadas
-# print(encoded_df %>% select(land_surface_condition, foundation_type, roof_type, ground_floor_type, other_floor_type, position) %>% head(10))
-
+ walk(
+   c("land_surface_condition", "foundation_type", "roof_type", "ground_floor_type", "other_floor_type", "position"),
+   crear_tabla_equivalencias
+ )
 ```
 
 #### land_surface_condition
@@ -167,7 +180,7 @@ print(unified_df %>% filter(has_secondary_use == 0) %>% nrow())
 
 # Número de muestras con has_secondary_use = 1
 print(unified_df %>% filter(has_secondary_use == 1) %>% nrow())
-````
+```
 
 ## Principal Component Analysis
 
