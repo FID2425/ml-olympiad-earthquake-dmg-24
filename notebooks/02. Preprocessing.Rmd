@@ -16,7 +16,9 @@ str(data)
 ```
 
 ## Column elimination
+
 According to the conclusions of the Exploratory Analysis, we will eliminate the following columns:
+
 - `building_id`
 - `plan_configuration`
 - `legal_ownership_status`
@@ -30,13 +32,13 @@ According to the conclusions of the Exploratory Analysis, we will eliminate the 
 - `has_secondary_use_other`
 
 ```{r}
-data <- data %>%
+reduced_data <- data %>%
   select(-building_id, -plan_configuration, -legal_ownership_status, -count_families, -has_secondary_use_use_police, -has_secondary_use_gov_office, -has_secondary_use_health_post, -has_secondary_use_industry, -has_secondary_use_institution, -has_secondary_use_school, -has_secondary_use_other)
 
 # View data
-head(data)
-dim(data)
-str(data)
+head(reduced_data)
+dim(reduced_data)
+str(reduced_data)
 ```
 
 As we can see, after eliminating the mentioned columns, the data has 26 columns.
@@ -49,7 +51,7 @@ In this document, we will be performing label encoding on character-type columns
 
 ```{r}
 # show only chr type columns
-data %>% select_if(is.character) %>% colnames()
+reduced_data %>% select_if(is.character) %>% colnames()
 ```
 
 To ensure we understand the contents of the character-type columns, we will display the unique values within each column. Then, we will use the `mutate` function in combination with `across` to apply label encoding to the selected columns. We convert each category into a numerical representation using the `factor` function, which assigns integer codes to each unique value.
@@ -58,10 +60,10 @@ To ensure we understand the contents of the character-type columns, we will disp
 ```{r}
 
 # show unique values in each column
-data %>% select_if(is.character) %>% map(unique)
+reduced_data %>% select_if(is.character) %>% map(unique)
 
 
-encoded_df <- data %>%
+encoded_df <- reduced_data %>%
   mutate(
     across(
       c(
@@ -88,8 +90,8 @@ To understand the mapping between original and encoded values, we create a funct
 # Función para crear y mostrar una tabla de equivalencias por cada columna
  crear_tabla_equivalencias <- function(col) {
    tabla_equivalencias <- tibble(
-     original = unique(data[[col]]),
-     encoded = as.numeric(factor(unique(data[[col]])))
+     original = unique(reduced_data[[col]]),
+     encoded = as.numeric(factor(unique(reduced_data[[col]])))
    )
    cat("\n### Tabla de equivalencias para:", col, "\n")
    print(tabla_equivalencias)
@@ -182,6 +184,84 @@ print(unified_df %>% filter(has_secondary_use == 0) %>% nrow())
 print(unified_df %>% filter(has_secondary_use == 1) %>% nrow())
 ```
 
-## Principal Component Analysis
+Finally, we are going to store the processed data in a new variable, in order to use it in the next steps.
+```{r}
+processed_data <- unified_df
+```
+
+
+## Principal Component Analysis (PCA)
+
+PCA is a dimensionality reduction technique that transforms the data into a lower-dimensional space. This technique is useful for reducing the number of features in the dataset while retaining the most important information. In this section, we will perform PCA on the dataset to reduce the number of features.
+
+First of all, we will take a look at the data we have obtained after the previous steps.
+
+```{r}
+head(processed_data)
+dim(processed_data)
+str(processed_data)
+summary(processed_data)
+```
+
+Before applying PCA, we need to prepare the data by doing the following:
+
+- Remove the target variable (`damage_grade`) from the dataset. We will add it back after applying PCA.
+- Standardize the data as PCA is sensitive to the scale of the variables. We will use the `scale` function to standardize the numerical variables so that they have a mean of 0 and a standard deviation of 1.
+
+```{r}
+# Remove the target variable
+data_without_target <- processed_data %>% select(-damage_grade)
+
+# Standardize the data
+data_scaled <- scale(data_without_target)
+```
+
+Now, we can apply PCA to the standardized data. We will use the `prcomp` function to perform PCA and extract the principal components. We can also view the PCA results, including the rotation matrix, which shows the correlation between the original variables and the principal components.
+
+```{r}
+pca_result <- prcomp(data_scaled, center = TRUE, scale. = TRUE)
+
+# View the PCA results
+summary(pca_result)
+
+# Get the rotation matrix
+pca_result$rotation
+```
+
+Now, we must decide how many principal components to keep. There are several methods to determine the number of components to retain, such as the Kaiser criterion, scree plot, and cumulative explained variance. In this case, we will use the Kaiser criterion, which suggests retaining components with eigenvalues greater than 1.
+
+```{r}
+# Calculate the eigenvalues
+eigenvalues <- pca_result$sdev^2
+
+# View the eigenvalues
+eigenvalues
+
+# Select the components with eigenvalues greater than 1
+num_components <- sum(eigenvalues > 1)
+
+# Number of components to keep
+num_components
+```
+
+According to the Kaiser criterion, we should keep the first 6 principal components. We can extract these components from the PCA results and add the target variable back to the dataset after applying PCA.
+
+```{r}
+# Convert the principal components to a data frame
+pca_components_df <- as.data.frame(pca_result$x)
+
+# Extract the first 6 principal components
+pca_components <- pca_components_df[, 1:num_components]
+
+# Add the target variable back to the dataset
+pca_data <- cbind(pca_components, processed_data$damage_grade)
+
+head(pca_data)
+dim(pca_data)
+str(pca_data)
+summary(pca_data)
+```
+
+As a result, we have obtained a dataset with 6 principal components and the target variable `damage_grade` after applying PCA using the Kaiser criterion. This suposes a significant reduction in the number of features. We can use this dataset for further analysis and modeling in the next steps.
 
 ## Imbalanced data handling
