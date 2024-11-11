@@ -17,6 +17,7 @@ str(data)
 
 ## Column elimination
 
+<<<<<<< Updated upstream
 According to the conclusions of the Exploratory Analysis, we will eliminate the following columns:
 
 - `building_id`
@@ -30,6 +31,9 @@ According to the conclusions of the Exploratory Analysis, we will eliminate the 
 - `has_secondary_use_institution`
 - `has_secondary_use_school`
 - `has_secondary_use_other`
+=======
+According to the conclusions of the Exploratory Analysis, we will eliminate the following columns: - `building_id` - `plan_configuration` - `legal_ownership_status` - `count_families` - `has_secondary_use_use_police` - `has_secondary_use_gov_office` - `has_secondary_use_health_post` - `has_secondary_use_industry` - `has_secondary_use_institution` - `has_secondary_use_school` - `has_secondary_use_other`
+>>>>>>> Stashed changes
 
 ```{r}
 reduced_data <- data %>%
@@ -56,7 +60,6 @@ reduced_data %>% select_if(is.character) %>% colnames()
 
 To ensure we understand the contents of the character-type columns, we will display the unique values within each column. Then, we will use the `mutate` function in combination with `across` to apply label encoding to the selected columns. We convert each category into a numerical representation using the `factor` function, which assigns integer codes to each unique value.
 
-
 ```{r}
 
 # show unique values in each column
@@ -79,12 +82,9 @@ encoded_df <- reduced_data %>%
   )
 ```
 
-
-
 ### Creating Equivalence Tables for Each Encoded Column
 
 To understand the mapping between original and encoded values, we create a function that generates and prints equivalence tables for each column. This function outputs a table showing the original category and its corresponding numerical code.
-
 
 ```{r}
 # Función para crear y mostrar una tabla de equivalencias por cada columna
@@ -158,15 +158,22 @@ To understand the mapping between original and encoded values, we create a funct
 | j        | 1       |
 | o        | 2       |
 
-
 ## Column unification
+
 ### Unify Has_secondary_use columns
+
+We have decided to remove the existing `has_secondary_use` column from our dataset. The main reason for this decision is the potential presence of inconsistent data, which could affect the quality and accuracy of future analyses.
+
+To ensure the dataset's integrity, we have recalculated the `has_secondary_use` column using the related columns (`has_secondary_use_etc`). This decision helps us:
+
+-   **Reduce noise** in the dataset by removing the multiple columns (`has_secondary_use_etc`) that previously complicated the analysis.
+-   **Centralize information** into a single, consistent column (`has_secondary_use`) that has been verified and adjusted for reliability.
+
+With this approach, we aim to make future analyses clearer and based on more trustworthy data.
 
 ```{r}
 ## Remove the has_secondary_use column
 encoded_df <- encoded_df %>% select(-has_secondary_use)
-
-# Hemos llegado a la conclusión de que está mal, porque al recalcular la columna con la misma lógica, obtenemos un número diferente de muestras negativas
 
 unified_df <- encoded_df %>%
   mutate(has_secondary_use = if_else(
