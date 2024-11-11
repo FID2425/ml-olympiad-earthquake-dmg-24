@@ -14,145 +14,6 @@ head(data)
 dim(data)
 str(data)
 ```
-
-## Column elimination
-According to the conclusions of the Exploratory Analysis, we will eliminate the following columns:
-
-- `building_id`
-- `plan_configuration`
-- `legal_ownership_status`
-- `count_families`
-- `has_secondary_use_use_police`
-- `has_secondary_use_gov_office`
-- `has_secondary_use_health_post`
-- `has_secondary_use_industry`
-- `has_secondary_use_institution`
-- `has_secondary_use_school`
-- `has_secondary_use_other`
-
-```{r}
-reduced_data <- data %>%
-  select(-building_id, -plan_configuration, -legal_ownership_status, -count_families, -has_secondary_use_use_police, -has_secondary_use_gov_office, -has_secondary_use_health_post, -has_secondary_use_industry, -has_secondary_use_institution, -has_secondary_use_school, -has_secondary_use_other)
-
-# View data
-head(reduced_data)
-dim(reduced_data)
-str(reduced_data)
-```
-
-As we can see, after eliminating the mentioned columns, the data has 26 columns.
-
-## Label encoding
-
-In this document, we will be performing label encoding on character-type columns. Label encoding converts categorical data into numerical values, allowing machine learning algorithms to handle non-numeric data more effectively.
-
-### Identify character-type columns
-
-```{r}
-# show only chr type columns
-reduced_data %>% select_if(is.character) %>% colnames()
-```
-
-To ensure we understand the contents of the character-type columns, we will display the unique values within each column. Then, we will use the `mutate` function in combination with `across` to apply label encoding to the selected columns. We convert each category into a numerical representation using the `factor` function, which assigns integer codes to each unique value.
-
-```{r}
-
-# show unique values in each column
-reduced_data %>% select_if(is.character) %>% map(unique)
-
-
-encoded_df <- reduced_data %>%
-  mutate(
-    across(
-      c(
-        land_surface_condition,
-        foundation_type,
-        roof_type,
-        ground_floor_type,
-        other_floor_type,
-        position
-      ),
-      ~ as.numeric(factor(.))
-    )
-  )
-```
-
-### Creating Equivalence Tables for Each Encoded Column
-
-To understand the mapping between original and encoded values, we create a function that generates and prints equivalence tables for each column. This function outputs a table showing the original category and its corresponding numerical code.
-
-```{r}
-# Función para crear y mostrar una tabla de equivalencias por cada columna
- crear_tabla_equivalencias <- function(col) {
-   tabla_equivalencias <- tibble(
-     original = unique(reduced_data[[col]]),
-     encoded = as.numeric(factor(unique(reduced_data[[col]])))
-   )
-   cat("\n### Tabla de equivalencias para:", col, "\n")
-   print(tabla_equivalencias)
- }
-
-# Generar una tabla por cada columna
- walk(
-   c("land_surface_condition", "foundation_type", "roof_type", "ground_floor_type", "other_floor_type", "position"),
-   crear_tabla_equivalencias
- )
-```
-
-#### land_surface_condition
-
-| Original | Encoded |
-|----------|---------|
-| o        | 2       |
-| t        | 3       |
-| n        | 1       |
-
-#### foundation_type
-
-| Original | Encoded |
-|----------|---------|
-| r        | 3       |
-| i        | 2       |
-| u        | 4       |
-| w        | 5       |
-| h        | 1       |
-
-#### roof_type
-
-| Original | Encoded |
-|----------|---------|
-| x        | 3       |
-| n        | 1       |
-| q        | 2       |
-
-#### ground_floor_type
-
-| Original | Encoded |
-|----------|---------|
-| f        | 1       |
-| v        | 3       |
-| x        | 4       |
-| m        | 2       |
-| z        | 5       |
-
-#### other_floor_type
-
-| Original | Encoded |
-|----------|---------|
-| q        | 2       |
-| s        | 3       |
-| j        | 1       |
-| x        | 4       |
-
-#### position
-
-| Original | Encoded |
-|----------|---------|
-| s        | 3       |
-| t        | 4       |
-| j        | 1       |
-| o        | 2       |
-
 ## Column unification
 
 ### Unify Has_secondary_use columns
@@ -167,30 +28,121 @@ To ensure the dataset's integrity, we have recalculated the `has_secondary_use` 
 With this approach, we aim to make future analyses clearer and based on more trustworthy data.
 
 ```{r}
-## Remove the has_secondary_use column
-encoded_df <- encoded_df %>% select(-has_secondary_use)
 
-unified_df <- encoded_df %>%
+print("Before unification")
+# has_secondary_use = 0 number of samples
+print(data %>% filter(has_secondary_use == 0) %>% nrow())
+
+# has_secondary_use = 1 number of samples
+print(data %>% filter(has_secondary_use == 1) %>% nrow())
+
+## Remove the has_secondary_use column
+new_df <- data %>% select(-has_secondary_use)
+
+# Unify the has_secondary_use columns
+data <- new_df %>%
   mutate(has_secondary_use = if_else(
-    rowSums(select(., starts_with("has_secondary_use"))) > 0, 
+    rowSums(select(., starts_with("has_secondary_use_"))) > 0, 
     1, 
     0
-  )) %>%
-  select(-starts_with("has_secondary_use_"))
+  ))
 
-# print(unified_df %>% select(has_secondary_use) %>% head(10))
-# Número de muestras con has_secondary_use = 0
-print(unified_df %>% filter(has_secondary_use == 0) %>% nrow())
+print("After unification")
 
-# Número de muestras con has_secondary_use = 1
-print(unified_df %>% filter(has_secondary_use == 1) %>% nrow())
+# has_secondary_use = 0 number of samples
+print(data %>% filter(has_secondary_use == 0) %>% nrow())
+
+# has_secondary_use = 1 number of samples
+print(data %>% filter(has_secondary_use == 1) %>% nrow())
+```
+
+## Column elimination
+
+According to the conclusions of the Exploratory Analysis, we will eliminate the following columns:
+
+-   `building_id`
+-   `plan_configuration`
+-   `legal_ownership_status`
+-   `count_families`
+-   `has_secondary_use_use_police`
+-   `has_secondary_use_gov_office`
+-   `has_secondary_use_health_post`
+-   `has_secondary_use_industry`
+-   `has_secondary_use_institution`
+-   `has_secondary_use_school`
+-   `has_secondary_use_other`
+
+```{r}
+reduced_data <- data %>%
+  select(-building_id, -plan_configuration, -legal_ownership_status, -count_families, -has_secondary_use_use_police, -has_secondary_use_gov_office, -has_secondary_use_health_post, -has_secondary_use_industry, -has_secondary_use_institution, -has_secondary_use_school, -has_secondary_use_other)
+
+# View data
+head(reduced_data)
+dim(reduced_data)
+str(reduced_data)
+```
+
+As we can see, after eliminating the mentioned columns, the data has 26 columns.
+
+## Column encoding
+### One-Hot Encoding
+
+In this section, we will perform one-hot encoding on the categorical variables in the dataset. One-hot encoding is a technique used to convert categorical variables into a numerical format that can be used in machine learning algorithms. This process involves creating binary columns for each category in a categorical variable.
+
+We will apply one-hot encoding to the following categorical variables:
+- `land_surface_condition`
+- `foundation_type`
+- `roof_type`
+- `ground_floor_type`
+- `other_floor_type`
+- `position`
+
+```{r}
+# Perform one-hot encoding
+## Convert categorical variables to binary columns
+
+df_one_hot <- reduced_data
+
+# Function to rename columns with a separator and create binary columns
+rename_columns <- function(column_names) {
+  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = reduced_data)
+  colnames(one_hot_data) <- paste(column_names, sub(column_names, "", colnames(one_hot_data)), sep = "_")
+  return(one_hot_data)
+}
+
+# Apply the function to each variable
+one_hot_roof_type <- rename_columns("roof_type")
+one_hot_land_surface_condition <- rename_columns("land_surface_condition")
+one_hot_foundation_type <- rename_columns("foundation_type")
+one_hot_ground_floor_type <- rename_columns("ground_floor_type")
+one_hot_other_floor_type <- rename_columns("other_floor_type")
+one_hot_position <- rename_columns("position")
+
+# Combine the original data frame with the renamed one-hot encoded columns
+
+df_one_hot <- cbind(
+  reduced_data,
+  one_hot_land_surface_condition,
+  one_hot_foundation_type,
+  one_hot_roof_type,
+  one_hot_ground_floor_type,
+  one_hot_other_floor_type,
+  one_hot_position
+) %>% select(-one_of(c("land_surface_condition", "foundation_type", "roof_type", 
+                   "ground_floor_type", "other_floor_type", "position")))
+
+# Convert one-hot encoded columns to integers
+df_one_hot[] <- lapply(df_one_hot, as.integer)
+
+head(df_one_hot)
+
 ```
 
 Finally, we are going to store the processed data in a new variable, in order to use it in the next steps.
-```{r}
-processed_data <- unified_df
-```
 
+```{r}
+processed_data <- df_one_hot
+```
 
 ## Principal Component Analysis (PCA)
 
@@ -207,8 +159,8 @@ summary(processed_data)
 
 Before applying PCA, we need to prepare the data by doing the following:
 
-- Remove the target variable (`damage_grade`) from the dataset. We will add it back after applying PCA.
-- Standardize the data as PCA is sensitive to the scale of the variables. We will use the `scale` function to standardize the numerical variables so that they have a mean of 0 and a standard deviation of 1.
+-   Remove the target variable (`damage_grade`) from the dataset. We will add it back after applying PCA.
+-   Standardize the data as PCA is sensitive to the scale of the variables. We will use the `scale` function to standardize the numerical variables so that they have a mean of 0 and a standard deviation of 1.
 
 ```{r}
 # Remove the target variable
@@ -267,3 +219,27 @@ summary(pca_data)
 As a result, we have obtained a dataset with 6 principal components and the target variable `damage_grade` after applying PCA using the Kaiser criterion. This suposes a significant reduction in the number of features. We can use this dataset for further analysis and modeling in the next steps.
 
 ## Imbalanced data handling
+
+In this section, we will address the issue of imbalanced data with SMOTE (Synthetic Minority Over Sampling Technique). SMOTE is a well-known algorithm to fight this problem. The general idea of this method is to artificially generate new examples of the minority class using the nearest neighbors of these cases. Furthermore, the majority class examples are also under-sampled, leading to a more balanced dataset.
+
+First, we will check the distribution of the target variable `damage_grade` to confirm the imbalance in the dataset. Then, we will apply SMOTE to balance the data.
+
+```{r}
+# Check the distribution of the target variable
+table(processed_data$damage_grade)
+dim(processed_data)
+
+```
+
+As we can see, the dataset is imbalanced, with a higher number of buildings in damage grade 2 compared to the other grades. We will use the `performanceEstimation` package to apply SMOTE to balance the data.
+
+```{r}
+
+# library(performanceEstimation)
+# balanced_data <- smote(damage_grade ~ ., data = processed_data)
+# 
+# # Check the distribution of the target variable in the balanced data
+# table(balanced_data$damage_grade)
+# dim(balanced_data)
+
+```
