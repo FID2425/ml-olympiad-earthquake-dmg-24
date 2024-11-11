@@ -258,7 +258,7 @@ pie(
 
 We can see that the distribution of the superstructure and secondary use columns
 is quite varied. For superstructure columns, the most common combinations are
-`mud_mortar_stone` (23.9%), `mud_mortar_stone` with `timber` (14.6%), `cement_mortar_brick` (8.2%) and no superstructure (6.7%). For secondary use columns, the most common combinations are no secondary use (84.6%) and `agriculture` with `rental` (5.1%).
+`mud_mortar_stone` (23.9%), `mud_mortar_stone` with `timber` (14.6%), `cement_mortar_brick` (8.2%) and no superstructure (6.7%). For secondary use columns, the most common combinations are no secondary use (78.1%) and `agriculture` with `rental` (5.1%).
 
 ## Analysis with specialized utilities
 
