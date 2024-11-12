@@ -1,5 +1,7 @@
 # 02. Preprocessing
 
+Preprocessing is a crucial step in the data analysis pipeline, as it helps to clean, transform, and prepare the data for further analysis and modeling. In this notebook, we will perform various preprocessing tasks on the dataset to ensure its quality and suitability for machine learning algorithms.
+
 ## Setup
 
 ```{r}
