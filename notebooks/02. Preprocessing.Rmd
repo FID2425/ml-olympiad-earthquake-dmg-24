@@ -14,6 +14,7 @@ head(data)
 dim(data)
 str(data)
 ```
+
 ## Column unification
 
 ### Unify Has_secondary_use columns
@@ -85,17 +86,12 @@ str(reduced_data)
 As we can see, after eliminating the mentioned columns, the data has 26 columns.
 
 ## Column encoding
+
 ### One-Hot Encoding
 
 In this section, we will perform one-hot encoding on the categorical variables in the dataset. One-hot encoding is a technique used to convert categorical variables into a numerical format that can be used in machine learning algorithms. This process involves creating binary columns for each category in a categorical variable.
 
-We will apply one-hot encoding to the following categorical variables:
-- `land_surface_condition`
-- `foundation_type`
-- `roof_type`
-- `ground_floor_type`
-- `other_floor_type`
-- `position`
+We will apply one-hot encoding to the following categorical variables: - `land_surface_condition` - `foundation_type` - `roof_type` - `ground_floor_type` - `other_floor_type` - `position`
 
 ```{r}
 # Perform one-hot encoding
@@ -218,28 +214,72 @@ summary(pca_data)
 
 As a result, we have obtained a dataset with 6 principal components and the target variable `damage_grade` after applying PCA using the Kaiser criterion. This suposes a significant reduction in the number of features. We can use this dataset for further analysis and modeling in the next steps.
 
-## Imbalanced data handling
+## Imbalance data handling
 
-In this section, we will address the issue of imbalanced data with SMOTE (Synthetic Minority Over Sampling Technique). SMOTE is a well-known algorithm to fight this problem. The general idea of this method is to artificially generate new examples of the minority class using the nearest neighbors of these cases. Furthermore, the majority class examples are also under-sampled, leading to a more balanced dataset.
+When working with imbalanced datasets, especially in predictive modeling, it is essential to address class imbalance to improve model performance and prevent biased results. There are numerous techniques available for balancing samples, including methods that generate synthetic data or assign weights to existing data points.
+
+### Generate synthetic data
+
+For this study, we explored various approaches to balance the distribution of our target variable, `damage_grade`. Initially, our dataset displayed the following distribution:
+
+| 1   | 2    | 3    |
+|-----|------|------|
+| 729 | 1968 | 1303 |
+
+To mitigate the imbalance, we applied **SMOTE (Synthetic Minority Oversampling Technique)**. SMOTE is a well-known algorithm to fight this problem. The general idea of this method is to artificially generate new examples of the minority class using the nearest neighbors of these cases. Furthermore, the majority class examples are also under-sampled, leading to a more balanced dataset.
 
 First, we will check the distribution of the target variable `damage_grade` to confirm the imbalance in the dataset. Then, we will apply SMOTE to balance the data.
 
-```{r}
-# Check the distribution of the target variable
-table(processed_data$damage_grade)
-dim(processed_data)
 
-```
-
-As we can see, the dataset is imbalanced, with a higher number of buildings in damage grade 2 compared to the other grades. We will use the `performanceEstimation` package to apply SMOTE to balance the data.
+As we can see, the dataset is imbalanced, with a higher number of buildings in damage grade 2 compared to the other grades. We will use the `smotefamily` package to apply SMOTE to balance the data.
 
 ```{r}
+library(smotefamily)
 
-# library(performanceEstimation)
-# balanced_data <- smote(damage_grade ~ ., data = processed_data)
-# 
-# # Check the distribution of the target variable in the balanced data
-# table(balanced_data$damage_grade)
-# dim(balanced_data)
+# Use damage_grade as factor
+processed_data$damage_grade <- as.factor(processed_data$damage_grade)
+
+# Apply SMOTE
+smote_result <- SMOTE(X = processed_data[, -which(names(processed_data) == "damage_grade")], 
+                      target = processed_data$damage_grade, 
+                      K = 5, 
+                      dup_size = 2)
+
+synthetic_data_smote <- smote_result$data
+
+dim(synthetic_data_smote)
+
+## Print the columns of the synthetic data as an array
+table(synthetic_data_smote$class)
+
+### Save the data as categorical
+synthetic_data_smote$class <- as.factor(synthetic_data_smote$class)
 
 ```
+| 1    | 2    | 3    |
+| ---- | ---- | ---- |
+| 2187 | 1968 | 1303 |
+
+The SMOTE algorithm has effectively increased the number of samples in the minority class (damage grade 1) by generating synthetic data based on the nearest neighbors. As a result, the distribution becomes more equitable, enhancing the model’s ability to correctly classify instances across all damage grades. This approach, combining oversampling of the minority class and under-sampling of the majority class, maintains a better balance and helps reduce potential overfitting to the dominant class.
+
+### Weighted sampling
+
+Another approach to handle imbalanced data is to assign weights to the samples based on their class distribution. By assigning higher weights to the minority class samples, we can emphasize their importance during model training and improve the model's ability to learn from these instances.
+
+```{r}
+# Calculate the frequency of each class
+class_freq <- table(processed_data$damage_grade)
+
+# Calculate the total number of samples
+total_samples <- sum(class_freq)
+
+# Calculate the inverse weights for each class (total_samples / class frequency)
+class_weights <- total_samples / (length(class_freq) * class_freq)
+
+# Assign the weights to the samples
+processed_data$weights <- sapply(processed_data$damage_grade, function(x) class_weights[as.character(x)])
+
+## Show the column damage_grade and weights for unique values
+unique(processed_data[, c("damage_grade", "weights")])
+```
+
