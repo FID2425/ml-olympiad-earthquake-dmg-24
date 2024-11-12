@@ -132,15 +132,87 @@ df_one_hot <- cbind(
 # Convert one-hot encoded columns to integers
 df_one_hot[] <- lapply(df_one_hot, as.integer)
 
+```
+
+Let's take a look at the data after applying one-hot encoding.
+
+```{r}
 head(df_one_hot)
+dim(df_one_hot)
+str(df_one_hot)
+summary(df_one_hot)
+```
+
+## Correlation analysis
+
+As we can see, after applying one-hot encoding, the number of columns has increased significantly. This transformation is necessary to convert categorical variables into a numerical format that can be used in machine learning algorithms. However, it is essential to check for correlation between the newly created binary columns, because maybe some of them are highly correlated and can be eliminated to reduce redundancy.
+
+```{r}
+df_correlation <- df_one_hot
+
+# Calculate the correlation matrix
+cor_matrix <- cor(df_correlation)
+
+# Define the threshold for high correlation
+threshold <- 0.75
+
+# Find pairs of highly correlated columns
+high_corr_pairs <- which(abs(cor_matrix) > threshold, arr.ind = TRUE)
+
+# Filter out the diagonal and duplicate pairs
+high_corr_pairs <- high_corr_pairs[high_corr_pairs[,1] < high_corr_pairs[,2], ]
+
+# Extract the column names of the highly correlated columns
+correlated_columns <- apply(high_corr_pairs, 1, function(pair) {
+  colnames(cor_matrix)[pair]
+})
+
+# See results
+correlated_columns
+```
+
+We have identified two pairs of highly correlated columns: 
+- `land_surface_condition_n` and `position_s`
+- `land_surface_condition_t` and `position_t`
+
+Now, we have to decide which column to remove from each pair. We will remove the column with the lowest variance, as it is likely to contain less information.
+
+```{r}
+# Pair 1: land_surface_condition_n and position_s
+# Calculate the variances of the columns
+variances <- apply(df_correlation[, c("land_surface_condition_n", "position_s")], 2, var)
+
+# Sort the variances in descending order
+variances_sorted <- sort(variances, decreasing = TRUE)
+
+# View the variances
+print(variances_sorted)
+
+# land_surface_condition_n has a lower variance, so we will remove it
+df_correlation <- df_correlation %>% select(-land_surface_condition_n)
+
+
+# Pair 2: land_surface_condition_t and position_t
+# Calculate the variances of the columns
+variances <- apply(df_correlation[, c("land_surface_condition_t", "position_t")], 2, var)
+
+# Sort the variances in descending order
+variances_sorted <- sort(variances, decreasing = TRUE)
+
+# View the variances
+print(variances_sorted)
+
+# position_t has a lower variance, so we will remove it
+df_correlation <- df_correlation %>% select(-position_t)
 
 ```
 
 Finally, we are going to store the processed data in a new variable, in order to use it in the next steps.
 
 ```{r}
-processed_data <- df_one_hot
+processed_data <- df_correlation
 ```
+
 
 ## Principal Component Analysis (PCA)
 
@@ -196,13 +268,13 @@ num_components <- sum(eigenvalues > 1)
 num_components
 ```
 
-According to the Kaiser criterion, we should keep the first 6 principal components. We can extract these components from the PCA results and add the target variable back to the dataset after applying PCA.
+According to the Kaiser criterion, we should keep the first 14 principal components. We can extract these components from the PCA results and add the target variable back to the dataset after applying PCA.
 
 ```{r}
 # Convert the principal components to a data frame
 pca_components_df <- as.data.frame(pca_result$x)
 
-# Extract the first 6 principal components
+# Extract the first 14 principal components
 pca_components <- pca_components_df[, 1:num_components]
 
 # Add the target variable back to the dataset
@@ -214,7 +286,7 @@ str(pca_data)
 summary(pca_data)
 ```
 
-As a result, we have obtained a dataset with 6 principal components and the target variable `damage_grade` after applying PCA using the Kaiser criterion. This suposes a significant reduction in the number of features. We can use this dataset for further analysis and modeling in the next steps.
+As a result, we have obtained a dataset with 14 principal components and the target variable `damage_grade` after applying PCA using the Kaiser criterion. This suposes a significant reduction in the number of features. We can use this dataset for further analysis and modeling in the next steps.
 
 ## Imbalance data handling
 
