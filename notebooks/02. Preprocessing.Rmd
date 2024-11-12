@@ -262,7 +262,7 @@ synthetic_data_smote$class <- as.factor(synthetic_data_smote$class)
 
 The SMOTE algorithm has effectively increased the number of samples in the minority class (damage grade 1) by generating synthetic data based on the nearest neighbors. As a result, the distribution becomes more equitable, enhancing the model’s ability to correctly classify instances across all damage grades. This approach, combining oversampling of the minority class and under-sampling of the majority class, maintains a better balance and helps reduce potential overfitting to the dominant class.
 
-### Weighted sampling
+### Weight allocation
 
 Another approach to handle imbalanced data is to assign weights to the samples based on their class distribution. By assigning higher weights to the minority class samples, we can emphasize their importance during model training and improve the model's ability to learn from these instances.
 
@@ -283,3 +283,4 @@ processed_data$weights <- sapply(processed_data$damage_grade, function(x) class_
 unique(processed_data[, c("damage_grade", "weights")])
 ```
 
+Now it is possible to use the weights assigned to each sample during model training to give more importance to the minority class instances. This approach helps to balance the impact of different classes on the model's learning process and improve the overall performance on imbalanced datasets.
