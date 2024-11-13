@@ -28,7 +28,7 @@ To ensure the dataset's integrity, we have recalculated the `has_secondary_use` 
 -   **Reduce noise** in the dataset by removing the multiple columns (`has_secondary_use_etc`) that previously complicated the analysis.
 -   **Centralize information** into a single, consistent column (`has_secondary_use`) that has been verified and adjusted for reliability.
 
-With this approach, we aim to make future analyses clearer and based on more trustworthy data.
+It is important to mention that we will keep the columns `has_secondary_use_agriculture`, `has_secondary_use_rental` and `has_secondary_use_hotel`; as we have seen in the EDA, these three columns do provide useful information to the dataset. With this approach, we aim to make future analyses clearer and based on more trustworthy data.
 
 ```{r}
 
@@ -171,9 +171,7 @@ correlated_columns <- apply(high_corr_pairs, 1, function(pair) {
 correlated_columns
 ```
 
-We have identified two pairs of highly correlated columns: 
-- `land_surface_condition_n` and `position_s`
-- `land_surface_condition_t` and `position_t`
+We have identified two pairs of highly correlated columns: - `land_surface_condition_n` and `position_s` - `land_surface_condition_t` and `position_t`
 
 Now, we have to decide which column to remove from each pair. We will remove the column with the lowest variance, as it is likely to contain less information.
 
@@ -212,7 +210,6 @@ Finally, we are going to store the processed data in a new variable, in order to
 ```{r}
 processed_data <- df_correlation
 ```
-
 
 ## Principal Component Analysis (PCA)
 
@@ -304,7 +301,6 @@ To mitigate the imbalance, we applied **SMOTE (Synthetic Minority Oversampling T
 
 First, we will check the distribution of the target variable `damage_grade` to confirm the imbalance in the dataset. Then, we will apply SMOTE to balance the data.
 
-
 As we can see, the dataset is imbalanced, with a higher number of buildings in damage grade 2 compared to the other grades. We will use the `smotefamily` package to apply SMOTE to balance the data.
 
 ```{r}
@@ -314,27 +310,29 @@ library(smotefamily)
 processed_data$damage_grade <- as.factor(processed_data$damage_grade)
 
 # Apply SMOTE
-smote_result <- SMOTE(X = processed_data[, -which(names(processed_data) == "damage_grade")], 
-                      target = processed_data$damage_grade, 
-                      K = 5, 
-                      dup_size = 2)
+apply_smote <- function(data, target_column, K = 5, dup_size = 2) {
+  smote_result <- SMOTE(X = data[, -which(names(data) == target_column)],
+                        target = data[[target_column]],
+                        K = K,
+                        dup_size = dup_size)
+  return(as.data.frame(smote_result$data))
+}
 
-synthetic_data_smote <- smote_result$data
-
-dim(synthetic_data_smote)
-
-## Print the columns of the synthetic data as an array
-table(synthetic_data_smote$class)
-
-### Save the data as categorical
+synthetic_data_smote <- apply_smote(processed_data, "damage_grade")
 synthetic_data_smote$class <- as.factor(synthetic_data_smote$class)
 
-```
-| 1    | 2    | 3    |
-| ---- | ---- | ---- |
-| 2187 | 1968 | 1303 |
+smoted_df <- apply_smote(synthetic_data_smote, "class",dup_size = 1)
+smoted_df$class <- as.factor(smoted_df$class)
 
-The SMOTE algorithm has effectively increased the number of samples in the minority class (damage grade 1) by generating synthetic data based on the nearest neighbors. As a result, the distribution becomes more equitable, enhancing the model’s ability to correctly classify instances across all damage grades. This approach, combining oversampling of the minority class and under-sampling of the majority class, maintains a better balance and helps reduce potential overfitting to the dominant class.
+# Check the distribution of the target variable after applying SMOTE 2 times
+table(smoted_df$class)
+```
+
+| 1    | 2    | 3    |
+|------|------|------|
+| 2187 | 1968 | 2606 |
+
+The SMOTE algorithm has effectively increased the number of samples in the minority classes (damage grade 1 and 3) by generating synthetic data based on the nearest neighbors. As a result, the distribution becomes more equitable, enhancing the model’s ability to correctly classify instances across all damage grades. This approach, combining oversampling of the minority class and under-sampling of the majority class, maintains a better balance and helps reduce potential overfitting to the dominant class.
 
 ### Weight allocation
 
