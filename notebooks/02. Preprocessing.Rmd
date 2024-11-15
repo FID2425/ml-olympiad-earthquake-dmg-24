@@ -87,6 +87,13 @@ str(reduced_data)
 
 As we can see, after eliminating the mentioned columns, the data has 26 columns.
 
+At this point, we are going to generate a csv file with the data after column unification and elimination, in order to use it in the next steps.
+
+```{r}
+write.csv(reduced_data, "../data/processed/pre_onehot_train.csv", row.names = FALSE)
+```
+
+
 ## Column encoding
 
 ### One-Hot Encoding
@@ -141,6 +148,12 @@ head(df_one_hot)
 dim(df_one_hot)
 str(df_one_hot)
 summary(df_one_hot)
+```
+
+At this point, we are going to generate a csv file with the data after one-hot encoding, in order to use it in the next steps.
+
+```{r}
+write.csv(df_one_hot, "../data/processed/onehot_train.csv", row.names = FALSE)
 ```
 
 ## Correlation analysis
@@ -203,6 +216,12 @@ print(variances_sorted)
 # position_t has a lower variance, so we will remove it
 df_correlation <- df_correlation %>% select(-position_t)
 
+```
+
+At this point, we are going to generate a csv file with the data after eliminating the highly correlated columns, in order to use it in the next steps.
+
+```{r}
+write.csv(df_correlation, "../data/processed/filtered_onehot_train.csv", row.names = FALSE)
 ```
 
 Finally, we are going to store the processed data in a new variable, in order to use it in the next steps.
@@ -285,6 +304,12 @@ summary(pca_data)
 
 As a result, we have obtained a dataset with 14 principal components and the target variable `damage_grade` after applying PCA using the Kaiser criterion. This suposes a significant reduction in the number of features. We can use this dataset for further analysis and modeling in the next steps.
 
+At this point, we are going to generate a csv file with the data after applying PCA, in order to use it in the next steps.
+
+```{r}
+write.csv(pca_data, "../data/processed/pca_train.csv", row.names = FALSE)
+```
+
 ## Imbalance data handling
 
 When working with imbalanced datasets, especially in predictive modeling, it is essential to address class imbalance to improve model performance and prevent biased results. There are numerous techniques available for balancing samples, including methods that generate synthetic data or assign weights to existing data points.
@@ -334,6 +359,12 @@ table(smoted_df$class)
 
 The SMOTE algorithm has effectively increased the number of samples in the minority classes (damage grade 1 and 3) by generating synthetic data based on the nearest neighbors. As a result, the distribution becomes more equitable, enhancing the model’s ability to correctly classify instances across all damage grades. This approach, combining oversampling of the minority class and under-sampling of the majority class, maintains a better balance and helps reduce potential overfitting to the dominant class.
 
+At this point, we are going to generate a csv file with the data after applying SMOTE, in order to use it in the next steps.
+
+```{r}
+write.csv(smoted_df, "../data/processed/smote_train.csv", row.names = FALSE)
+```
+
 ### Weight allocation
 
 Another approach to handle imbalanced data is to assign weights to the samples based on their class distribution. By assigning higher weights to the minority class samples, we can emphasize their importance during model training and improve the model's ability to learn from these instances.
@@ -353,6 +384,15 @@ processed_data$weights <- sapply(processed_data$damage_grade, function(x) class_
 
 ## Show the column damage_grade and weights for unique values
 unique(processed_data[, c("damage_grade", "weights")])
+
+# View the data with weights
+head(processed_data)
 ```
 
 Now it is possible to use the weights assigned to each sample during model training to give more importance to the minority class instances. This approach helps to balance the impact of different classes on the model's learning process and improve the overall performance on imbalanced datasets.
+
+At this point, we are going to generate a csv file with the data after assigning weights, in order to use it in the next steps.
+
+```{r}
+write.csv(processed_data, "../data/processed/weighted_train.csv", row.names = FALSE)
+```
