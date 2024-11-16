@@ -1,0 +1,92 @@
+# 03.01 Unsuperivsed Learning
+
+Unsupervised learning is a type of machine learning where the model learns patterns and relationships in the data without any explicit labels or target variables. It is used to discover hidden structures or patterns in the data.
+
+In unsupervised learning, the model explores the data and identifies clusters, associations, or anomalies based on the inherent structure of the data. It can be useful for tasks such as data exploration, dimensionality reduction, and anomaly detection.
+
+Some common algorithms used in unsupervised learning include clustering algorithms like k-means, hierarchical clustering, and DBSCAN, as well as dimensionality reduction techniques like principal component analysis (PCA) and t-SNE.
+
+In this section, we will explore various unsupervised learning techniques and their applications. 
+
+## Setup
+
+```{r}
+library(keras)
+library(plotly)
+
+set.seed(33)
+
+onehot_data <- read.csv("./data/processed/onehot_train.csv", sep=",", header=TRUE)
+train_damage_grade <- onehot_data$damage_grade
+onehot_data$damage_grade <- NULL
+
+onehot_test <- read.csv("./data/processed/onehot_test.csv", sep=",", header=TRUE)
+test_damage_grade <- onehot_test$damage_grade
+onehot_test$damage_grade <- NULL
+```
+
+## Clustering
+
+Clustering is a type of unsupervised learning where the goal is to group similar data points together based on their features. The data points within a cluster are more similar to each other than to data points in other clusters.
+
+### Dimensionality Reduction
+
+Let's start by reducing the dimensionality of the data using autoencoders. Autoencoders are a type of neural network that learns to encode and decode the input data, effectively learning a compressed representation of the data.
+
+```{r}
+# define the encoder
+encoder <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = 'relu', input_shape = ncol(onehot_data)) %>%
+  layer_dense(units = 32, activation = 'relu') %>%
+  layer_dense(units = 16, activation = 'relu') %>%
+  layer_dense(units = 8 , activation = 'relu')
+
+# define the decoder
+decoder <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = 'relu', input_shape=8) %>%
+  layer_dense(units = 32, activation = 'relu') %>%
+  layer_dense(units = 64, activation = 'relu') %>%
+  layer_dense(units = ncol(onehot_data), activation = 'sigmoid')
+
+# combine the encoder and decoder to create the autoencoder
+autoencoder <- keras_model(inputs = encoder$input, outputs = decoder(encoder$output))
+
+# compile the autoencoder
+autoencoder %>% compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = c("mse", "mae"))
+
+# prepare the data 
+to_normalize_cols <- c("count_floors_pre_eq", "age", "area_percentage", "height_percentage")
+
+for (col in to_normalize_cols) {
+  max_val <- max(c(max(onehot_data[[col]], na.rm = TRUE), max(onehot_test[[col]], na.rm = TRUE)))
+  min_val <- min(c(min(onehot_data[[col]], na.rm = TRUE), min(onehot_test[[col]], na.rm = TRUE)))
+
+  onehot_data[[col]] <- (onehot_data[[col]] - min_val) / (max_val - min_val)
+  onehot_test[[col]] <- (onehot_test[[col]] - min_val) / (max_val - min_val)
+}
+
+x_data <- as.matrix(onehot_data)
+x_train_index <- sample(1:nrow(onehot_data), 0.8 * nrow(onehot_data))
+x_train <- onehot_data[x_train_index, ]
+x_validation <- onehot_data[-x_train_index, ]
+x_test <- as.matrix(onehot_test)
+x_data <- array_reshape(x_data, c(nrow(x_data), ncol(onehot_data)))
+x_train <- array_reshape(x_train, c(nrow(x_train), ncol(onehot_data)))
+x_validation <- array_reshape(x_validation, c(nrow(x_validation), ncol(onehot_data)))
+x_test <- array_reshape(x_test, c(nrow(x_test), ncol(onehot_test)))
+
+# train the autoencoder
+history <- autoencoder %>% fit(x_train, x_train, epochs = 150, batch_size = 256,  validation_data = list(x_validation, x_validation))
+plot(history)
+
+autoencoder %>% evaluate(x_test, x_test, batch_size=1)
+```
+
+The autoencoder compresses the input data into an 8-dimensional latent space. The results show that the autoencoder has learned a good representation of the data, with a binary crossentropy of 0.129, a mean squared error of 0.026 and a mean average error of 0.05 on the test set.
+
+
+## Association Rule Mining
+
+Association rule mining is a technique used to discover interesting relationships or patterns in large datasets. 
+
+## Anomaly Detection
