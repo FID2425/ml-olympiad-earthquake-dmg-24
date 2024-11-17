@@ -1,0 +1,35 @@
+# 03.02. Supervised Learning
+
+In this notebook, we will apply different classification algorithms to the different datasets we have obtained during preprocessing. The main goal is to find the best model for each dataset.
+
+We will use the following datasets:
+  - `onehot_train.csv`
+  - `filtered_onehot_train.csv`
+  - `pca_train.csv`
+  - `smote_train.csv`
+  - `weighted_train.csv`
+
+We will using some test datasets to evaluate the models:
+  - `onehot_test.csv`: this will be used for the models generated with `onehot_train.csv`.
+  - `filtered_onehot_test.csv`: this will be used for the models generated with `filtered_onehot_train.csv`, `smote_train.csv` and `weighted_train.csv`.
+  - `pca_test.csv`: this will be used for the models generated with `pca_train.csv`.
+
+We will use the following classification algorithms:
+ - Random Forest (ranger).
+ - Gradient Boosting Machines (xgbTree).
+ - Stochastic Gradient Boosting (gbm).
+ 
+We will use the following metrics to evaluate the models:
+ - Confusion Matrix.
+ - ROC and AUC Multiclass Curves.
+ - Lift Curves.
+ 
+## Onehot Dataset
+ 
+## Filtered Onehot Dataset
+ 
+## PCA Dataset
+ 
+## SMOTE Dataset
+ 
+## Weighted Dataset
