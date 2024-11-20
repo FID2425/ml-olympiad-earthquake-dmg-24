@@ -14,7 +14,7 @@ Preprocessing is a crucial step in the data analysis pipeline, as it helps to cl
 library(tidyverse)
 
 # Load the data
-data <- read.csv("../data/raw/raw_data.csv")
+data <- read.csv("../data/raw/raw_data_train.csv")
 
 # View data
 head(data)
@@ -570,3 +570,143 @@ write.csv(pca_data_test, "../data/processed/test/pca_test.csv", row.names = FALS
 ### Imbalance data handling
 
 In the case of the test set, we will not apply SMOTE or weight allocation, as these techniques are used to balance the training set. We will be using the `filtered_onehot_test.csv` as the test set for the datasets generated with SMOTE and weight allocation, as this dataset has suffered the same preprocessing steps as the original dataset we used to apply SMOTE and weight allocation.
+
+## Unsupervised learning preprocessing
+
+In order to apply unsupervised learning techniques, we don't need to use a labeled dataset. Therefore, we will use all the original data extracted from ´raw_data_train.csv´ and ´raw_data_test.csv´ to apply unsupervised learning techniques. In fact, we will use the data after column unification, column elimination and one-hot encoding, as it is the most suitable for unsupervised learning.
+
+First, we will apply one-hot encoding to the cleaned data extracted from ´raw_data_train.csv´, which has suffered column unification and elimination yet. The following categorical variables will be one-hot encoded: - `land_surface_condition` - `foundation_type` - `roof_type` - `ground_floor_type` - `other_floor_type` - `position`
+
+```{r}
+# Perform one-hot encoding
+## Convert categorical variables to binary columns
+
+df_one_hot_unsupervised_train <- clean_data
+
+# Function to rename columns with a separator and create binary columns
+rename_columns <- function(column_names) {
+  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = clean_data)
+  colnames(one_hot_data) <- paste(column_names, sub(column_names, "", colnames(one_hot_data)), sep = "_")
+  return(one_hot_data)
+}
+
+# Apply the function to each variable
+one_hot_roof_type <- rename_columns("roof_type")
+one_hot_land_surface_condition <- rename_columns("land_surface_condition")
+one_hot_foundation_type <- rename_columns("foundation_type")
+one_hot_ground_floor_type <- rename_columns("ground_floor_type")
+one_hot_other_floor_type <- rename_columns("other_floor_type")
+one_hot_position <- rename_columns("position")
+
+# Combine the original data frame with the renamed one-hot encoded columns
+
+df_one_hot_unsupervised_train <- cbind(
+  clean_data,
+  one_hot_land_surface_condition,
+  one_hot_foundation_type,
+  one_hot_roof_type,
+  one_hot_ground_floor_type,
+  one_hot_other_floor_type,
+  one_hot_position
+) %>% select(-one_of(c("land_surface_condition", "foundation_type", "roof_type", 
+                   "ground_floor_type", "other_floor_type", "position")))
+
+# Convert one-hot encoded columns to integers
+df_one_hot_unsupervised_train[] <- lapply(df_one_hot_unsupervised_train, as.integer)
+
+```
+
+At this point, we are going to generate a csv file with the data after one-hot encoding, in order to use it in the next steps.
+
+```{r}
+write.csv(df_one_hot_unsupervised_train, "../data/processed/unsupervised/onehot_train.csv", row.names = FALSE)
+```
+
+Now, we will apply column unification, column elimination and one-hot encoding to the raw data extracted from ´raw_data_test.csv´.
+
+Column unification:
+
+```{r}
+# Load the data
+data_test <- read.csv("../data/raw/raw_data_test.csv")
+
+print("Before unification")
+# has_secondary_use = 0 number of samples
+print(data_test %>% filter(has_secondary_use == 0) %>% nrow())
+
+# has_secondary_use = 1 number of samples
+print(data_test %>% filter(has_secondary_use == 1) %>% nrow())
+
+## Remove the has_secondary_use column
+new_df_test <- data_test %>% select(-has_secondary_use)
+
+# Unify the has_secondary_use columns
+data_test <- new_df_test %>%
+  mutate(has_secondary_use = if_else(
+    rowSums(select(., starts_with("has_secondary_use_"))) > 0, 
+    1, 
+    0
+  ))
+
+print("After unification")
+
+# has_secondary_use = 0 number of samples
+print(data_test %>% filter(has_secondary_use == 0) %>% nrow())
+
+# has_secondary_use = 1 number of samples
+print(data_test %>% filter(has_secondary_use == 1) %>% nrow())
+```
+
+Column elimination:
+
+```{r}
+clean_data_test <- data_test %>%
+  select(-building_id, -plan_configuration, -legal_ownership_status, -count_families, -has_secondary_use_use_police, -has_secondary_use_gov_office, -has_secondary_use_health_post, -has_secondary_use_industry, -has_secondary_use_institution, -has_secondary_use_school, -has_secondary_use_other)
+```
+
+One-hot encoding:
+
+```{r}
+# Perform one-hot encoding
+## Convert categorical variables to binary columns
+
+df_one_hot_unsupervised_test <- clean_data_test
+
+# Function to rename columns with a separator and create binary columns
+rename_columns <- function(column_names) {
+  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = clean_data_test)
+  colnames(one_hot_data) <- paste(column_names, sub(column_names, "", colnames(one_hot_data)), sep = "_")
+  return(one_hot_data)
+}
+
+# Apply the function to each variable
+one_hot_roof_type <- rename_columns("roof_type")
+one_hot_land_surface_condition <- rename_columns("land_surface_condition")
+one_hot_foundation_type <- rename_columns("foundation_type")
+one_hot_ground_floor_type <- rename_columns("ground_floor_type")
+one_hot_other_floor_type <- rename_columns("other_floor_type")
+one_hot_position <- rename_columns("position")
+
+# Combine the original data frame with the renamed one-hot encoded columns
+
+df_one_hot_unsupervised_test <- cbind(
+  clean_data_test,
+  one_hot_land_surface_condition,
+  one_hot_foundation_type,
+  one_hot_roof_type,
+  one_hot_ground_floor_type,
+  one_hot_other_floor_type,
+  one_hot_position
+) %>% select(-one_of(c("land_surface_condition", "foundation_type", "roof_type", 
+                   "ground_floor_type", "other_floor_type", "position")))
+
+# Convert one-hot encoded columns to integers
+df_one_hot_unsupervised_test[] <- lapply(df_one_hot_unsupervised_test, as.integer)
+
+```
+
+At this point, we are going to generate a csv file with the data after one-hot encoding, in order to use it in the next steps.
+
+```{r}
+write.csv(df_one_hot_unsupervised_test, "../data/processed/unsupervised/onehot_test.csv", row.names = FALSE)
+```

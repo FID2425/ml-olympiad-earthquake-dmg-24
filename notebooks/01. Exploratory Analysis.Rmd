@@ -12,7 +12,7 @@ library(dplyr)
 library(DataExplorer)
 
 # Load the data
-data <- read.csv("../data/raw/raw_data.csv")
+data <- read.csv("../data/raw/raw_data_train.csv")
 
 # View data
 head(data)
