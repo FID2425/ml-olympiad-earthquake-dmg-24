@@ -25,8 +25,150 @@ We will use the following metrics to evaluate the models:
  - Lift Curves.
  
 ## Onehot Dataset
- 
+First, we will load the `onehot_train.csv` dataset and apply the classification algorithms to it.
+
+```{r}
+# Load the dataset
+library(tidyverse)
+library(caret)
+
+onehot_train <- read.csv("../data/processed/train/onehot_train.csv")
+head(onehot_train)
+```
+### Random Forest
+This method is a combination of tree predictors such that each tree depends on the values of a random vector sampled independently and with the same distribution for all trees in the forest.
+
+Tuning parameters:
+- `mtry` (#Randomly Selected Predictors)
+- `splitrule` (Splitting Rule)
+- `min.node.size` (Minimal Node Size)
+
+```{r, results='hide'}
+# Set the class as factor
+levels(onehot_train$damage_grade) <- c("Grade_1", "Grade_2", "Grade_3")
+levels(onehot_train$damage_grade) <- make.names(levels(onehot_train$damage_grade))
+onehot_train$damage_grade <- as.factor(onehot_train$damage_grade)
+
+## Define the tuning grid
+tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+                        .splitrule = "gini",
+                        .min.node.size = c(1, 5, 10, 15, 20))
+
+## Train the model
+set.seed(123)
+rf_model <- train(x = onehot_train %>% select(-damage_grade),
+                  y = onehot_train$damage_grade,
+                  method = "ranger",
+                  trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
+                  tuneGrid = tuneGrid)
+                  # trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs= TRUE),
+
+## Save the model
+save(rf_model, file = "../models/rf_onehot_model.RData")
+```
+Once the model is trained, we can evaluate it using the `onehot_test.csv` dataset.
+
+```{r}
+# Load the test dataset
+onehot_test <- read.csv("../data/processed/test/onehot_test.csv")
+
+# Load the model
+load("../models/rf_onehot_model.RData")
+
+# Convert the 'damage_grade' column to a factor
+onehot_test$damage_grade <- as.factor(onehot_test$damage_grade)
+
+# Set the levels of 'damage_grade' to ensure consistent ordering
+levels(onehot_test$damage_grade) <- c("Grade_1", "Grade_2", "Grade_3")
+
+# Predict the test dataset
+onehot_test$damage_grade_pred <- predict(rf_model, newdata = onehot_test)
+
+# Ensure that both 'damage_grade' and 'damage_grade_pred' have the same levels
+levels(onehot_test$damage_grade_pred) <- levels(onehot_test$damage_grade)
+
+# Predict with probabilities
+onehot_test$probabilities <- predict(rf_model, newdata = onehot_test, type = "prob")
+
+# Save the predictions
+write.csv(onehot_test, "../data/predictions/rf_onehot_predictions.csv", row.names = FALSE)
+```
+
+#### Confusion Matrix
+Now we can evaluate the model using the confusion matrix. 
+
+```{r}
+# Load the predictions
+rf_onehot_predictions <- read.csv("../data/predictions/rf_onehot_predictions.csv")
+rf_onehot_predictions$damage_grade_pred <- as.factor(rf_onehot_predictions$damage_grade_pred)
+
+# Save the confusion matrix
+confusion_matrix <- confusionMatrix(rf_onehot_predictions$damage_grade_pred, onehot_test$damage_grade, mode = "everything")
+confusion_matrix
+
+confusion_matrix_table <- as.data.frame(confusion_matrix$byClass)
+## Rename row from Class: Grade_1 to Grade_1
+rownames(confusion_matrix_table)[rownames(confusion_matrix_table) == "Class: Grade_1"] <- "Grade_1"
+rownames(confusion_matrix_table)[rownames(confusion_matrix_table) == "Class: Grade_2"] <- "Grade_2"
+rownames(confusion_matrix_table)[rownames(confusion_matrix_table) == "Class: Grade_3"] <- "Grade_3"
+```
+
+#### ROC and AUC Multiclass Curves
+The ROC curve is a graphical plot that illustrates the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The ROC curve is created by plotting the true positive rate (TPR) against the false positive rate (FPR) at various threshold settings.
+
+The AUC is the area under the ROC curve. AUC provides an aggregate measure of performance across all possible classification thresholds.
+
+```{r}
+library(pROC)
+library(ggplot2)
+
+colnames(rf_onehot_predictions)[colnames(rf_onehot_predictions) == "probabilities.Grade_1"] <- "Grade_1"
+colnames(rf_onehot_predictions)[colnames(rf_onehot_predictions) == "probabilities.Grade_2"] <- "Grade_2"
+colnames(rf_onehot_predictions)[colnames(rf_onehot_predictions) == "probabilities.Grade_3"] <- "Grade_3"
+
+
+# Create the ROC curve
+multiclass_roc <- multiclass.roc(rf_onehot_predictions$damage_grade_pred, 
+                                 rf_onehot_predictions[, c("Grade_1", 
+                                                           "Grade_2", 
+                                                           "Grade_3")])
+
+# Print the AUC
+print(paste("AUC :", round(multiclass_roc$auc, 4)))
+
+```
+
+### Gradient Boosting Machines
+Gradient boosting is a machine learning technique for regression and classification problems, which produces a prediction model in the form of an ensemble of weak prediction models, typically decision trees.
+
+Tuning parameters:
+
+- `nrounds` (# Boosting Iterations)
+- `max_depth` (Max Tree Depth)
+- `eta` (Shrinkage)
+- `gamma` (Minimum Loss Reduction)
+- `colsample_bytree` (Subsample Ratio of Columns)
+- `min_child_weight` (Minimum Sum of Instance Weight)
+- `subsample` (Subsample Percentage)
+
+
+```{r, results='hide'}
+## Define the tuning grid
+tuneGrid <- expand.grid(.nrounds = c(50, 100, 150, 200),
+                        .max_depth = c(2, 3, 4, 5),
+                        .eta = c(0.01, 0.1, 0.3, 0.5),
+                        .gamma = c(0, 0.1, 0.2, 0.3),
+                        .colsample_bytree = c(0.5, 0.7, 0.9, 1),
+                        .min_child_weight = c(1, 3, 5, 7),
+                        .subsample = c(0.5, 0.7, 0.9, 1))
+````
+
 ## Filtered Onehot Dataset
+
+```{r}
+filtered_onehot_train <- read.csv("../data/processed/train/filtered_onehot_train.csv")
+head(filtered_onehot_train)
+```
  
 ## PCA Dataset
  
