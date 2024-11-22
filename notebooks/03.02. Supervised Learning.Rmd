@@ -31,6 +31,9 @@ First, we will load the `onehot_train.csv` dataset and apply the classification 
 # Load the dataset
 library(tidyverse)
 library(caret)
+library(pROC)
+library(ggplot2)
+library(xgboost)
 
 onehot_train <- read.csv("../data/processed/train/onehot_train.csv")
 head(onehot_train)
@@ -46,7 +49,6 @@ Tuning parameters:
 ```{r, results='hide'}
 # Set the class as factor
 levels(onehot_train$damage_grade) <- c("Grade_1", "Grade_2", "Grade_3")
-levels(onehot_train$damage_grade) <- make.names(levels(onehot_train$damage_grade))
 onehot_train$damage_grade <- as.factor(onehot_train$damage_grade)
 
 ## Define the tuning grid
@@ -78,11 +80,9 @@ load("../models/rf_onehot_model.RData")
 # Convert the 'damage_grade' column to a factor
 onehot_test$damage_grade <- as.factor(onehot_test$damage_grade)
 
-# Set the levels of 'damage_grade' to ensure consistent ordering
-levels(onehot_test$damage_grade) <- c("Grade_1", "Grade_2", "Grade_3")
-
 # Predict the test dataset
 onehot_test$damage_grade_pred <- predict(rf_model, newdata = onehot_test)
+onehot_test$damage_grade_pred <- as.factor(onehot_test$damage_grade_pred)
 
 # Ensure that both 'damage_grade' and 'damage_grade_pred' have the same levels
 levels(onehot_test$damage_grade_pred) <- levels(onehot_test$damage_grade)
@@ -119,19 +119,14 @@ The ROC curve is a graphical plot that illustrates the diagnostic ability of a b
 The AUC is the area under the ROC curve. AUC provides an aggregate measure of performance across all possible classification thresholds.
 
 ```{r}
-library(pROC)
-library(ggplot2)
-
 colnames(rf_onehot_predictions)[colnames(rf_onehot_predictions) == "probabilities.Grade_1"] <- "Grade_1"
 colnames(rf_onehot_predictions)[colnames(rf_onehot_predictions) == "probabilities.Grade_2"] <- "Grade_2"
 colnames(rf_onehot_predictions)[colnames(rf_onehot_predictions) == "probabilities.Grade_3"] <- "Grade_3"
 
 
 # Create the ROC curve
-multiclass_roc <- multiclass.roc(rf_onehot_predictions$damage_grade_pred, 
-                                 rf_onehot_predictions[, c("Grade_1", 
-                                                           "Grade_2", 
-                                                           "Grade_3")])
+multiclass_roc <- multiclass.roc(as.numeric(rf_onehot_predictions$damage_grade_pred), 
+                                 as.numeric(rf_onehot_predictions$damage_grade))
 
 # Print the AUC
 print(paste("AUC :", round(multiclass_roc$auc, 4)))
@@ -154,14 +149,156 @@ Tuning parameters:
 
 ```{r, results='hide'}
 ## Define the tuning grid
-tuneGrid <- expand.grid(.nrounds = c(50, 100, 150, 200),
-                        .max_depth = c(2, 3, 4, 5),
-                        .eta = c(0.01, 0.1, 0.3, 0.5),
-                        .gamma = c(0, 0.1, 0.2, 0.3),
-                        .colsample_bytree = c(0.5, 0.7, 0.9, 1),
-                        .min_child_weight = c(1, 3, 5, 7),
-                        .subsample = c(0.5, 0.7, 0.9, 1))
-````
+tuneGrid <- expand.grid(
+  .nrounds = c(50, 100),              
+  .max_depth = c(3, 4),                
+  .eta = c(0.1, 0.3),                  
+  .gamma = c(0, 0.1),                  
+  .colsample_bytree = c(0.7, 0.9),     
+  .min_child_weight = c(1, 3),         
+  .subsample = c(0.7, 0.9)             
+)
+
+## Train the model
+set.seed(123)
+gbm_model <- train(x = onehot_train %>% select(-damage_grade),
+                   y = onehot_train$damage_grade,
+                   method = "xgbTree",
+                   trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
+                   tuneGrid = tuneGrid)
+
+## Save the model
+save(gbm_model, file = "../models/gbm_onehot_model.RData")
+```
+
+Once the model is trained, we can evaluate it using the `onehot_test.csv` dataset.
+
+```{r}
+# Load the test dataset
+onehot_test <- read.csv("../data/processed/test/onehot_test.csv")
+
+# Load the model
+load("../models/gbm_onehot_model.RData")
+
+
+# Predict the test dataset
+onehot_test$damage_grade_pred <- predict(gbm_model, newdata = onehot_test)
+
+# Ensure that both 'damage_grade' and 'damage_grade_pred' have the same levels
+levels(onehot_test$damage_grade_pred) <- levels(onehot_test$damage_grade)
+
+
+# Save the predictions
+write.csv(onehot_test, "../data/predictions/gbm_onehot_predictions.csv", row.names = FALSE)
+```
+
+#### Confusion Matrix
+Now we can evaluate the model using the confusion matrix. 
+
+```{r}
+# Load the predictions
+gbm_onehot_predictions <- read.csv("../data/predictions/gbm_onehot_predictions.csv")
+gbm_onehot_predictions$damage_grade_pred <- as.factor(gbm_onehot_predictions$damage_grade_pred)
+gbm_onehot_predictions$damage_grade_pred_numeric <- as.numeric(as.character(gbm_onehot_predictions$damage_grade_pred))
+
+# Round the predictions to the nearest integer
+gbm_onehot_predictions$damage_grade_pred_rounded <- round(gbm_onehot_predictions$damage_grade_pred_numeric)
+
+# Save the confusion matrix
+confusion_matrix_gbm <- confusionMatrix(as.factor(gbm_onehot_predictions$damage_grade_pred_rounded), as.factor(onehot_test$damage_grade), mode = "everything")
+confusion_matrix_gbm
+# 
+confusion_matrix_gbm_table <- as.data.frame(confusion_matrix_gbm$byClass)
+# ## Rename row from Class: Grade_1 to Grade_1
+rownames(confusion_matrix_gbm_table)[rownames(confusion_matrix_gbm_table) == "Class: Grade_1"] <- "Grade_1"
+rownames(confusion_matrix_gbm_table)[rownames(confusion_matrix_gbm_table) == "Class: Grade_2"] <- "Grade_2"
+rownames(confusion_matrix_gbm_table)[rownames(confusion_matrix_gbm_table) == "Class: Grade_3"] <- "Grade_3"
+
+```
+#### ROC and AUC Multiclass Curves
+
+```{r}
+multiclass_auc_gbm <- multiclass.roc(gbm_onehot_predictions$damage_grade, filtered_onehot_predictions$damage_grade_pred_rounded)
+print(paste("AUC :", round(multiclass_auc_gbm$auc, 4)))
+```
+### Stochastic Gradient Boosting
+Stochastic Gradient Boosting (SGB) is a generalization of boosting to arbitrary differentiable loss functions. It is particularly useful for classification problems.
+
+Tuning parameters:
+
+- `n.trees` (# Boosting Iterations)
+- `interaction.depth` (Max Tree Depth)
+- `shrinkage` (Shrinkage)
+- `n.minobsinnode` (Min. Terminal Node Size)
+
+```{r, results='hide'}
+## Define the tuning grid
+tuneGrid <- expand.grid(
+  .n.trees = c(50, 100),              
+  .interaction.depth = c(3, 4),       
+  .shrinkage = c(0.1, 0.3),           
+  .n.minobsinnode = c(10, 20)         
+)
+
+## Train the model
+set.seed(123)
+sgb_model <- train(x = onehot_train %>% select(-damage_grade),
+                   y = onehot_train$damage_grade,
+                   method = "gbm",
+                   trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
+                   tuneGrid = tuneGrid)
+
+## Save the model
+save(sgb_model, file = "../models/sgb_onehot_model.RData")
+```
+Once the model is trained, we can evaluate it using the `onehot_test.csv` dataset.
+
+```{r}
+# Load the test dataset
+onehot_test <- read.csv("../data/processed/test/onehot_test.csv")
+
+# Load the model
+load("../models/sgb_onehot_model.RData")
+
+# Predict the test dataset
+onehot_test$damage_grade_pred <- predict(sgb_model, newdata = onehot_test)
+
+# Ensure that both 'damage_grade' and 'damage_grade_pred' have the same levels
+levels(onehot_test$damage_grade_pred) <- levels(onehot_test$damage_grade)
+
+# Save the predictions
+write.csv(onehot_test, "../data/predictions/sgb_onehot_predictions.csv", row.names = FALSE)
+```
+
+#### Confusion Matrix
+
+```{r}
+# Load the predictions
+sgb_onehot_predictions <- read.csv("../data/predictions/sgb_onehot_predictions.csv")
+sgb_onehot_predictions$damage_grade_pred <- as.factor(sgb_onehot_predictions$damage_grade_pred)
+sgb_onehot_predictions$damage_grade_pred <- as.factor(sgb_onehot_predictions$damage_grade_pred)
+sgb_onehot_predictions$damage_grade_pred_numeric <- as.numeric(as.character(sgb_onehot_predictions$damage_grade_pred))
+
+# Round the predictions to the nearest integer
+sgb_onehot_predictions$damage_grade_pred_rounded <- round(sgb_onehot_predictions$damage_grade_pred_numeric)
+
+# Save the confusion matrix
+confusion_matrix_sgb <- confusionMatrix(as.factor(sgb_onehot_predictions$damage_grade_pred_rounded), as.factor(onehot_test$damage_grade), mode = "everything")
+confusion_matrix_sgb
+
+confusion_matrix_sgb_table <- as.data.frame(confusion_matrix_sgb$byClass)
+## Rename row from Class: Grade_1 to
+rownames(confusion_matrix_sgb_table)[rownames(confusion_matrix_sgb_table) == "Class: Grade_1"] <- "Grade_1"
+rownames(confusion_matrix_sgb_table)[rownames(confusion_matrix_sgb_table) == "Class: Grade_2"] <- "Grade_2"
+rownames(confusion_matrix_sgb_table)[rownames(confusion_matrix_sgb_table) == "Class: Grade_3"] <- "Grade_3"
+
+```
+#### ROC and AUC Multiclass Curves
+
+```{r}
+multiclass_auc_gbm <- multiclass.roc(sgb_onehot_predictions$damage_grade, sgb_onehot_predictions$damage_grade_pred_rounded)
+print(paste("AUC :", round(multiclass_auc_gbm$auc, 4)))
+```
 
 ## Filtered Onehot Dataset
 
@@ -169,9 +306,23 @@ tuneGrid <- expand.grid(.nrounds = c(50, 100, 150, 200),
 filtered_onehot_train <- read.csv("../data/processed/train/filtered_onehot_train.csv")
 head(filtered_onehot_train)
 ```
- 
+
+### Random Forest
+
 ## PCA Dataset
  
 ## SMOTE Dataset
  
 ## Weighted Dataset
+
+
+# F1-Score
+```{r}
+# Convert F1 values to numeric
+x1 <- as.numeric(confusion_matrix_sgb_table$F1[1])
+x2 <- as.numeric(confusion_matrix_sgb_table$F1[2])
+x3 <- as.numeric(confusion_matrix_sgb_table$F1[3])
+
+
+f1_mean <- mean(c(x1, x2, x3))
+````
