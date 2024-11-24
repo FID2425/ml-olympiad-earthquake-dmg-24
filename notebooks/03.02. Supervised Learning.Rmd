@@ -59,8 +59,7 @@ apply_algorithm <- function(algorithm, tuneGrid, train_data, test_data, model_pa
     x = train_data %>% select(-damage_grade),
     y = train_data$damage_grade,
     method = algorithm,
-    trControl = trainControl(method = "cv", number = 2, verboseIter = TRUE, classProbs = TRUE),
-    # trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
+    trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
     tuneGrid = tuneGrid
   )
   
@@ -165,35 +164,35 @@ Tuning parameters:
 
 ```{r}
 # Define the tuning grid
-rf_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+rf_onehot_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
                         .splitrule = "gini",
                         .min.node.size = c(1, 5, 10, 15, 20))
 
 # Define the model and predictions paths
-rf_model_path <- "../models/rf_onehot_model.RData"
-rf_predictions_path <- "../data/predictions/rf_onehot_predictions.csv"
+rf_onehot_model_path <- "../models/rf_onehot_model.RData"
+rf_onehot_predictions_path <- "../data/predictions/rf_onehot_predictions.csv"
 
 # Apply the algorithm
-rf_model <- apply_algorithm("ranger", rf_tuneGrid, onehot_train, onehot_test, rf_model_path, rf_predictions_path)
+rf_onehot_model <- apply_algorithm("ranger", rf_onehot_tuneGrid, onehot_train, onehot_test, rf_onehot_model_path, rf_onehot_predictions_path)
 ```
 
 Now we can evaluate the model using the confusion matrix and other metrics.
 
 ```{r}
 # Load the predictions
-rf_onehot_predictions <- read.csv(rf_predictions_path)
+rf_onehot_predictions <- read.csv(rf_onehot_predictions_path)
 
 # Get the metrics
-metrics <- get_prediction_metrics(onehot_test, rf_onehot_predictions)
-metrics$confusion
-metrics$metrics_table
+rf_onehot_metrics <- get_prediction_metrics(onehot_test, rf_onehot_predictions)
+rf_onehot_metrics$confusion
+rf_onehot_metrics$metrics_table
 ```
 
 Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-auc <- get_AUC_multiclass(onehot_test, rf_onehot_predictions)
+rf_onehot_auc <- get_AUC_multiclass(onehot_test, rf_onehot_predictions)
 ```
 
 ### Gradient Boosting Machines
@@ -212,7 +211,7 @@ Tuning parameters:
 
 ```{r}
 # Define the tuning grid
-gbm_tuneGrid <- expand.grid(
+gbm_onehot_tuneGrid <- expand.grid(
   .nrounds = c(50, 100),              
   .max_depth = c(3, 4),                
   .eta = c(0.1, 0.3),                  
@@ -223,30 +222,30 @@ gbm_tuneGrid <- expand.grid(
 )
 
 # Define the model and predictions paths
-gbm_model_path <- "../models/gbm_onehot_model.RData"
-gbm_predictions_path <- "../data/predictions/gbm_onehot_predictions.csv"
+gbm_onehot_model_path <- "../models/gbm_onehot_model.RData"
+gbm_onehot_predictions_path <- "../data/predictions/gbm_onehot_predictions.csv"
 
 # Apply the algorithm
-gbm_model <- apply_algorithm("xgbTree", gbm_tuneGrid, onehot_train, onehot_test, gbm_model_path, gbm_predictions_path)
+gbm_onehot_model <- apply_algorithm("xgbTree", gbm_onehot_tuneGrid, onehot_train, onehot_test, gbm_onehot_model_path, gbm_onehot_predictions_path)
 ```
 
 Now we can evaluate the model using the confusion matrix and other metrics.
 
 ```{r}
 # Load the predictions
-gbm_onehot_predictions <- read.csv(gbm_predictions_path)
+gbm_onehot_predictions <- read.csv(gbm_onehot_predictions_path)
 
 # Get the metrics
-metrics <- get_prediction_metrics(onehot_test, gbm_onehot_predictions)
-metrics$confusion
-metrics$metrics_table
+gbm_onehot_metrics <- get_prediction_metrics(onehot_test, gbm_onehot_predictions)
+gbm_onehot_metrics$confusion
+gbm_onehot_metrics$metrics_table
 ```
 
 Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-auc <- get_AUC_multiclass(onehot_test, gbm_onehot_predictions)
+gbm_onehot_auc <- get_AUC_multiclass(onehot_test, gbm_onehot_predictions)
 ```
 
 ### Stochastic Gradient Boosting
@@ -262,7 +261,7 @@ Tuning parameters:
 
 ```{r}
 # Define the tuning grid
-sgb_tuneGrid <- expand.grid(
+sgb_onehot_tuneGrid <- expand.grid(
   .n.trees = c(50, 100),              
   .interaction.depth = c(3, 4),       
   .shrinkage = c(0.1, 0.3),           
@@ -270,30 +269,30 @@ sgb_tuneGrid <- expand.grid(
 )
 
 # Define the model and predictions paths
-sgb_model_path <- "../models/sgb_onehot_model.RData"
-sgb_predictions_path <- "../data/predictions/sgb_onehot_predictions.csv"
+sgb_onehot_model_path <- "../models/sgb_onehot_model.RData"
+sgb_onehot_predictions_path <- "../data/predictions/sgb_onehot_predictions.csv"
 
 # Apply the algorithm
-sgb_model <- apply_algorithm("gbm", sgb_tuneGrid, onehot_train, onehot_test, sgb_model_path, sgb_predictions_path)
+sgb_onehot_model <- apply_algorithm("gbm", sgb_onehot_tuneGrid, onehot_train, onehot_test, sgb_onehot_model_path, sgb_onehot_predictions_path)
 ```
 
 Now we can evaluate the model using the confusion matrix and other metrics.
 
 ```{r}
 # Load the predictions
-sgb_onehot_predictions <- read.csv(sgb_predictions_path)
+sgb_onehot_predictions <- read.csv(sgb_onehot_predictions_path)
 
 # Get the metrics
-metrics <- get_prediction_metrics(onehot_test, sgb_onehot_predictions)
-metrics$confusion
-metrics$metrics_table
+sgb_onehot_metrics <- get_prediction_metrics(onehot_test, sgb_onehot_predictions)
+sgb_onehot_metrics$confusion
+sgb_onehot_metrics$metrics_table
 ```
 
 Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-auc <- get_AUC_multiclass(onehot_test, sgb_onehot_predictions)
+sgb_onehot_auc <- get_AUC_multiclass(onehot_test, sgb_onehot_predictions)
 ```
 
 ## Filtered Onehot Dataset
