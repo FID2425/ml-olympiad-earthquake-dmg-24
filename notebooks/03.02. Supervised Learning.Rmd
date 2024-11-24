@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 # 03.02. Supervised Learning
 
 In this notebook, we will apply different classification algorithms to the different datasets we have obtained during preprocessing. The main goal is to find the best model for each dataset.
@@ -22,118 +27,176 @@ We will use the following classification algorithms:
 We will use the following metrics to evaluate the models:
  - Confusion Matrix.
  - ROC and AUC Multiclass Curves.
- - Lift Curves.
  
-## Onehot Dataset
-First, we will load the `onehot_train.csv` dataset and apply the classification algorithms to it.
+## Functions
+
+We will define some functions to help us evaluate the models.
+
+First, we will load the libraries we will use.
 
 ```{r}
-# Load the dataset
 library(tidyverse)
 library(caret)
 library(pROC)
 library(ggplot2)
 library(xgboost)
-
-onehot_train <- read.csv("../data/processed/train/onehot_train.csv")
-head(onehot_train)
 ```
+
+The following function will be used to apply the classification algorithms to the datasets. It will train the model, save it, predict the test data, save the predictions, and return the trained model.
+
+```{r}
+apply_algorithm <- function(algorithm, tuneGrid, train_data, test_data, model_path, predictions_path) {
+  # Record start time
+  start_time <- Sys.time()
+  
+  # Convert the target column to a factor
+  train_data$damage_grade <- as.factor(train_data$damage_grade)
+  levels(train_data$damage_grade) <- make.names(levels(train_data$damage_grade))
+  
+  # Train the model
+  set.seed(123)
+  model <- train(
+    x = train_data %>% select(-damage_grade),
+    y = train_data$damage_grade,
+    method = algorithm,
+    trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
+    tuneGrid = tuneGrid
+  )
+  
+  # Save the model
+  save(model, file = model_path)
+  
+  # Prepare the test data
+  test_data$damage_grade <- as.factor(test_data$damage_grade)
+  levels(test_data$damage_grade) <- levels(train_data$damage_grade) # Ensure levels match training data
+  
+  # Predict the test data
+  test_data$damage_grade_pred <- predict(model, newdata = test_data)
+  
+  # Predict with probabilities
+  test_data$probabilities <- predict(model, newdata = test_data, type = "prob")
+  
+  # Save the predictions
+  write.csv(test_data, predictions_path, row.names = FALSE)
+  
+  # Record end time
+  end_time <- Sys.time()
+  
+  # Calculate total execution time
+  total_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  minutes <- floor(total_time / 60)
+  seconds <- round(total_time %% 60)
+  cat("Total execution time:", minutes, "minute(s) and", seconds, "second(s).\n")
+  
+  # Return the trained model
+  return(model)
+}
+```
+
+The following function will be used to calculate the confusion matrix and other metrics.
+
+The confusion matrix is a table that is often used to describe the performance of a classification model on a set of test data for which the true values are known. It allows the visualization of the performance of an algorithm.
+
+```{r}
+get_prediction_metrics <- function(original_data, predicted_data) {
+  # Convert the 'damage_grade' column to a factor
+  original_data$damage_grade <- factor(original_data$damage_grade, levels = c("1", "2", "3"))
+  
+  # Convert the 'damage_grade_pred' column to a factor
+  predicted_data$damage_grade_pred <- factor(predicted_data$damage_grade_pred, levels = c("X1", "X2", "X3"), labels = c("1", "2", "3"))
+  
+  # Calculate confusion matrix
+  confusion <- confusionMatrix(data = predicted_data$damage_grade_pred, reference = original_data$damage_grade, mode = "everything")
+  
+  # Get other metrics in a table
+  metrics_table <- as.data.frame(confusion$byClass)
+  
+  # Return the confusion matrix and metrics table
+  return(list(confusion = confusion, metrics_table = metrics_table))
+}
+```
+
+The following function will be used to calculate the ROC and AUC Multiclass Curves.
+
+The ROC curve is a graphical plot that illustrates the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The ROC curve is created by plotting the true positive rate (TPR) against the false positive rate (FPR) at various threshold settings.
+
+The AUC is the area under the ROC curve. AUC provides an aggregate measure of performance across all possible classification thresholds.
+
+```{r}
+get_AUC_multiclass <- function(original_data, predicted_data) {
+  # Convert the 'damage_grade' column to a factor
+  original_data$damage_grade <- factor(original_data$damage_grade, levels = c("1", "2", "3"))
+  
+  # Convert the 'damage_grade_pred' column to a factor
+  predicted_data$damage_grade_pred <- factor(predicted_data$damage_grade_pred, levels = c("X1", "X2", "X3"), labels = c("1", "2", "3"))
+  
+  # Create the ROC curve
+  multiclass_roc <- multiclass.roc(as.numeric(predicted_data$damage_grade_pred), as.numeric(original_data$damage_grade))
+  
+  # Print the AUC
+  print(paste("AUC :", round(multiclass_roc$auc, 4)))
+  
+  # Return the AUC
+  return(multiclass_roc)
+}
+```
+
+## Onehot Dataset
+
+We will load the `onehot_train.csv` and `onehot_test.csv` datasets and apply the classification algorithms to them.
+
+```{r}
+# Load the dataset
+onehot_train <- read.csv("../data/processed/train/onehot_train.csv")
+
+# Load the test dataset
+onehot_test <- read.csv("../data/processed/test/onehot_test.csv")
+```
+
 ### Random Forest
-This method is a combination of tree predictors such that each tree depends on the values of a random vector sampled independently and with the same distribution for all trees in the forest.
+
+This method is a combination of tree predictors such that each tree depends on the values of a random vector sampled independently and with the same distribution for all trees in the forest. Ranger is a fast implementation of Random Forest for high-dimensional data.
 
 Tuning parameters:
 - `mtry` (#Randomly Selected Predictors)
 - `splitrule` (Splitting Rule)
 - `min.node.size` (Minimal Node Size)
 
-```{r, results='hide'}
-# Set the class as factor
-levels(onehot_train$damage_grade) <- c("Grade_1", "Grade_2", "Grade_3")
-onehot_train$damage_grade <- as.factor(onehot_train$damage_grade)
-
-## Define the tuning grid
-tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+```{r}
+# Define the tuning grid
+rf_onehot_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
                         .splitrule = "gini",
                         .min.node.size = c(1, 5, 10, 15, 20))
 
-## Train the model
-set.seed(123)
-rf_model <- train(x = onehot_train %>% select(-damage_grade),
-                  y = onehot_train$damage_grade,
-                  method = "ranger",
-                  trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
-                  tuneGrid = tuneGrid)
-                  # trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs= TRUE),
+# Define the model and predictions paths
+rf_onehot_model_path <- "../models/rf_onehot_model.RData"
+rf_onehot_predictions_path <- "../data/predictions/rf_onehot_predictions.csv"
 
-## Save the model
-save(rf_model, file = "../models/rf_onehot_model.RData")
-```
-Once the model is trained, we can evaluate it using the `onehot_test.csv` dataset.
-
-```{r}
-# Load the test dataset
-onehot_test <- read.csv("../data/processed/test/onehot_test.csv")
-
-# Load the model
-load("../models/rf_onehot_model.RData")
-
-# Convert the 'damage_grade' column to a factor
-onehot_test$damage_grade <- as.factor(onehot_test$damage_grade)
-
-# Predict the test dataset
-onehot_test$damage_grade_pred <- predict(rf_model, newdata = onehot_test)
-onehot_test$damage_grade_pred <- as.factor(onehot_test$damage_grade_pred)
-
-# Ensure that both 'damage_grade' and 'damage_grade_pred' have the same levels
-levels(onehot_test$damage_grade_pred) <- levels(onehot_test$damage_grade)
-
-# Predict with probabilities
-onehot_test$probabilities <- predict(rf_model, newdata = onehot_test, type = "prob")
-
-# Save the predictions
-write.csv(onehot_test, "../data/predictions/rf_onehot_predictions.csv", row.names = FALSE)
+# Apply the algorithm
+rf_onehot_model <- apply_algorithm("ranger", rf_onehot_tuneGrid, onehot_train, onehot_test, rf_onehot_model_path, rf_onehot_predictions_path)
 ```
 
-#### Confusion Matrix
-Now we can evaluate the model using the confusion matrix. 
+Now we can evaluate the model using the confusion matrix and other metrics.
 
 ```{r}
 # Load the predictions
-rf_onehot_predictions <- read.csv("../data/predictions/rf_onehot_predictions.csv")
-rf_onehot_predictions$damage_grade_pred <- as.factor(rf_onehot_predictions$damage_grade_pred)
+rf_onehot_predictions <- read.csv(rf_onehot_predictions_path)
 
-# Save the confusion matrix
-confusion_matrix <- confusionMatrix(rf_onehot_predictions$damage_grade_pred, onehot_test$damage_grade, mode = "everything")
-confusion_matrix
-
-confusion_matrix_table <- as.data.frame(confusion_matrix$byClass)
-## Rename row from Class: Grade_1 to Grade_1
-rownames(confusion_matrix_table)[rownames(confusion_matrix_table) == "Class: Grade_1"] <- "Grade_1"
-rownames(confusion_matrix_table)[rownames(confusion_matrix_table) == "Class: Grade_2"] <- "Grade_2"
-rownames(confusion_matrix_table)[rownames(confusion_matrix_table) == "Class: Grade_3"] <- "Grade_3"
+# Get the metrics
+rf_onehot_metrics <- get_prediction_metrics(onehot_test, rf_onehot_predictions)
+rf_onehot_metrics$confusion
+rf_onehot_metrics$metrics_table
 ```
 
-#### ROC and AUC Multiclass Curves
-The ROC curve is a graphical plot that illustrates the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The ROC curve is created by plotting the true positive rate (TPR) against the false positive rate (FPR) at various threshold settings.
-
-The AUC is the area under the ROC curve. AUC provides an aggregate measure of performance across all possible classification thresholds.
+Finally, we can calculate the AUC.
 
 ```{r}
-colnames(rf_onehot_predictions)[colnames(rf_onehot_predictions) == "probabilities.Grade_1"] <- "Grade_1"
-colnames(rf_onehot_predictions)[colnames(rf_onehot_predictions) == "probabilities.Grade_2"] <- "Grade_2"
-colnames(rf_onehot_predictions)[colnames(rf_onehot_predictions) == "probabilities.Grade_3"] <- "Grade_3"
-
-
-# Create the ROC curve
-multiclass_roc <- multiclass.roc(as.numeric(rf_onehot_predictions$damage_grade_pred), 
-                                 as.numeric(rf_onehot_predictions$damage_grade))
-
-# Print the AUC
-print(paste("AUC :", round(multiclass_roc$auc, 4)))
-
+# Get the AUC
+rf_onehot_auc <- get_AUC_multiclass(onehot_test, rf_onehot_predictions)
 ```
 
 ### Gradient Boosting Machines
+
 Gradient boosting is a machine learning technique for regression and classification problems, which produces a prediction model in the form of an ensemble of weak prediction models, typically decision trees.
 
 Tuning parameters:
@@ -146,10 +209,9 @@ Tuning parameters:
 - `min_child_weight` (Minimum Sum of Instance Weight)
 - `subsample` (Subsample Percentage)
 
-
-```{r, results='hide'}
-## Define the tuning grid
-tuneGrid <- expand.grid(
+```{r}
+# Define the tuning grid
+gbm_onehot_tuneGrid <- expand.grid(
   .nrounds = c(50, 100),              
   .max_depth = c(3, 4),                
   .eta = c(0.1, 0.3),                  
@@ -159,69 +221,35 @@ tuneGrid <- expand.grid(
   .subsample = c(0.7, 0.9)             
 )
 
-## Train the model
-set.seed(123)
-gbm_model <- train(x = onehot_train %>% select(-damage_grade),
-                   y = onehot_train$damage_grade,
-                   method = "xgbTree",
-                   trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
-                   tuneGrid = tuneGrid)
+# Define the model and predictions paths
+gbm_onehot_model_path <- "../models/gbm_onehot_model.RData"
+gbm_onehot_predictions_path <- "../data/predictions/gbm_onehot_predictions.csv"
 
-## Save the model
-save(gbm_model, file = "../models/gbm_onehot_model.RData")
+# Apply the algorithm
+gbm_onehot_model <- apply_algorithm("xgbTree", gbm_onehot_tuneGrid, onehot_train, onehot_test, gbm_onehot_model_path, gbm_onehot_predictions_path)
 ```
 
-Once the model is trained, we can evaluate it using the `onehot_test.csv` dataset.
-
-```{r}
-# Load the test dataset
-onehot_test <- read.csv("../data/processed/test/onehot_test.csv")
-
-# Load the model
-load("../models/gbm_onehot_model.RData")
-
-
-# Predict the test dataset
-onehot_test$damage_grade_pred <- predict(gbm_model, newdata = onehot_test)
-
-# Ensure that both 'damage_grade' and 'damage_grade_pred' have the same levels
-levels(onehot_test$damage_grade_pred) <- levels(onehot_test$damage_grade)
-
-
-# Save the predictions
-write.csv(onehot_test, "../data/predictions/gbm_onehot_predictions.csv", row.names = FALSE)
-```
-
-#### Confusion Matrix
-Now we can evaluate the model using the confusion matrix. 
+Now we can evaluate the model using the confusion matrix and other metrics.
 
 ```{r}
 # Load the predictions
-gbm_onehot_predictions <- read.csv("../data/predictions/gbm_onehot_predictions.csv")
-gbm_onehot_predictions$damage_grade_pred <- as.factor(gbm_onehot_predictions$damage_grade_pred)
-gbm_onehot_predictions$damage_grade_pred_numeric <- as.numeric(as.character(gbm_onehot_predictions$damage_grade_pred))
+gbm_onehot_predictions <- read.csv(gbm_onehot_predictions_path)
 
-# Round the predictions to the nearest integer
-gbm_onehot_predictions$damage_grade_pred_rounded <- round(gbm_onehot_predictions$damage_grade_pred_numeric)
-
-# Save the confusion matrix
-confusion_matrix_gbm <- confusionMatrix(as.factor(gbm_onehot_predictions$damage_grade_pred_rounded), as.factor(onehot_test$damage_grade), mode = "everything")
-confusion_matrix_gbm
-# 
-confusion_matrix_gbm_table <- as.data.frame(confusion_matrix_gbm$byClass)
-# ## Rename row from Class: Grade_1 to Grade_1
-rownames(confusion_matrix_gbm_table)[rownames(confusion_matrix_gbm_table) == "Class: Grade_1"] <- "Grade_1"
-rownames(confusion_matrix_gbm_table)[rownames(confusion_matrix_gbm_table) == "Class: Grade_2"] <- "Grade_2"
-rownames(confusion_matrix_gbm_table)[rownames(confusion_matrix_gbm_table) == "Class: Grade_3"] <- "Grade_3"
-
+# Get the metrics
+gbm_onehot_metrics <- get_prediction_metrics(onehot_test, gbm_onehot_predictions)
+gbm_onehot_metrics$confusion
+gbm_onehot_metrics$metrics_table
 ```
-#### ROC and AUC Multiclass Curves
+
+Finally, we can calculate the AUC.
 
 ```{r}
-multiclass_auc_gbm <- multiclass.roc(gbm_onehot_predictions$damage_grade, filtered_onehot_predictions$damage_grade_pred_rounded)
-print(paste("AUC :", round(multiclass_auc_gbm$auc, 4)))
+# Get the AUC
+gbm_onehot_auc <- get_AUC_multiclass(onehot_test, gbm_onehot_predictions)
 ```
+
 ### Stochastic Gradient Boosting
+
 Stochastic Gradient Boosting (SGB) is a generalization of boosting to arbitrary differentiable loss functions. It is particularly useful for classification problems.
 
 Tuning parameters:
@@ -231,83 +259,59 @@ Tuning parameters:
 - `shrinkage` (Shrinkage)
 - `n.minobsinnode` (Min. Terminal Node Size)
 
-```{r, results='hide'}
-## Define the tuning grid
-tuneGrid <- expand.grid(
+```{r}
+# Define the tuning grid
+sgb_onehot_tuneGrid <- expand.grid(
   .n.trees = c(50, 100),              
   .interaction.depth = c(3, 4),       
   .shrinkage = c(0.1, 0.3),           
   .n.minobsinnode = c(10, 20)         
 )
 
-## Train the model
-set.seed(123)
-sgb_model <- train(x = onehot_train %>% select(-damage_grade),
-                   y = onehot_train$damage_grade,
-                   method = "gbm",
-                   trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
-                   tuneGrid = tuneGrid)
+# Define the model and predictions paths
+sgb_onehot_model_path <- "../models/sgb_onehot_model.RData"
+sgb_onehot_predictions_path <- "../data/predictions/sgb_onehot_predictions.csv"
 
-## Save the model
-save(sgb_model, file = "../models/sgb_onehot_model.RData")
-```
-Once the model is trained, we can evaluate it using the `onehot_test.csv` dataset.
-
-```{r}
-# Load the test dataset
-onehot_test <- read.csv("../data/processed/test/onehot_test.csv")
-
-# Load the model
-load("../models/sgb_onehot_model.RData")
-
-# Predict the test dataset
-onehot_test$damage_grade_pred <- predict(sgb_model, newdata = onehot_test)
-
-# Ensure that both 'damage_grade' and 'damage_grade_pred' have the same levels
-levels(onehot_test$damage_grade_pred) <- levels(onehot_test$damage_grade)
-
-# Save the predictions
-write.csv(onehot_test, "../data/predictions/sgb_onehot_predictions.csv", row.names = FALSE)
+# Apply the algorithm
+sgb_onehot_model <- apply_algorithm("gbm", sgb_onehot_tuneGrid, onehot_train, onehot_test, sgb_onehot_model_path, sgb_onehot_predictions_path)
 ```
 
-#### Confusion Matrix
+Now we can evaluate the model using the confusion matrix and other metrics.
 
 ```{r}
 # Load the predictions
-sgb_onehot_predictions <- read.csv("../data/predictions/sgb_onehot_predictions.csv")
-sgb_onehot_predictions$damage_grade_pred <- as.factor(sgb_onehot_predictions$damage_grade_pred)
-sgb_onehot_predictions$damage_grade_pred <- as.factor(sgb_onehot_predictions$damage_grade_pred)
-sgb_onehot_predictions$damage_grade_pred_numeric <- as.numeric(as.character(sgb_onehot_predictions$damage_grade_pred))
+sgb_onehot_predictions <- read.csv(sgb_onehot_predictions_path)
 
-# Round the predictions to the nearest integer
-sgb_onehot_predictions$damage_grade_pred_rounded <- round(sgb_onehot_predictions$damage_grade_pred_numeric)
-
-# Save the confusion matrix
-confusion_matrix_sgb <- confusionMatrix(as.factor(sgb_onehot_predictions$damage_grade_pred_rounded), as.factor(onehot_test$damage_grade), mode = "everything")
-confusion_matrix_sgb
-
-confusion_matrix_sgb_table <- as.data.frame(confusion_matrix_sgb$byClass)
-## Rename row from Class: Grade_1 to
-rownames(confusion_matrix_sgb_table)[rownames(confusion_matrix_sgb_table) == "Class: Grade_1"] <- "Grade_1"
-rownames(confusion_matrix_sgb_table)[rownames(confusion_matrix_sgb_table) == "Class: Grade_2"] <- "Grade_2"
-rownames(confusion_matrix_sgb_table)[rownames(confusion_matrix_sgb_table) == "Class: Grade_3"] <- "Grade_3"
-
+# Get the metrics
+sgb_onehot_metrics <- get_prediction_metrics(onehot_test, sgb_onehot_predictions)
+sgb_onehot_metrics$confusion
+sgb_onehot_metrics$metrics_table
 ```
-#### ROC and AUC Multiclass Curves
+
+Finally, we can calculate the AUC.
 
 ```{r}
-multiclass_auc_gbm <- multiclass.roc(sgb_onehot_predictions$damage_grade, sgb_onehot_predictions$damage_grade_pred_rounded)
-print(paste("AUC :", round(multiclass_auc_gbm$auc, 4)))
+# Get the AUC
+sgb_onehot_auc <- get_AUC_multiclass(onehot_test, sgb_onehot_predictions)
 ```
 
 ## Filtered Onehot Dataset
 
+We will load the `filtered_onehot_train.csv` and `filtered_onehot_test.csv` datasets and apply the classification algorithms to them.
+
 ```{r}
+# Load the dataset
 filtered_onehot_train <- read.csv("../data/processed/train/filtered_onehot_train.csv")
-head(filtered_onehot_train)
+
+# Load the test dataset
+filtered_onehot_test <- read.csv("../data/processed/test/filtered_onehot_test.csv")
 ```
 
 ### Random Forest
+
+### Gradient Boosting Machines
+
+### Stochastic Gradient Boosting
 
 ## PCA Dataset
  
