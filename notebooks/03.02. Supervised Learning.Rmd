@@ -340,16 +340,16 @@ Now we can evaluate the model using the confusion matrix and other metrics.
 rf_filtered_onehot_predictions <- read.csv(rf_filtered_predictions_path)
 
 # Get the metrics
-metrics_rf_filtered <- get_prediction_metrics(filtered_onehot_test, rf_filtered_onehot_predictions)
-metrics_rf_filtered$confusion
-metrics_rf_filtered$metrics_table
+rf_filtered_metrics <- get_prediction_metrics(filtered_onehot_test, rf_filtered_onehot_predictions)
+rf_filtered_metrics$confusion
+rf_filtered_metrics$metrics_table
 ```
 
 Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-auc_rf_filtered <- get_AUC_multiclass(filtered_onehot_test, rf_filtered_onehot_predictions)
+rf_filtered_auc <- get_AUC_multiclass(filtered_onehot_test, rf_filtered_onehot_predictions)
 ```
 
 ### Gradient Boosting Machines
@@ -393,16 +393,16 @@ Now we can evaluate the model using the confusion matrix and other metrics.
 gbm_filtered_predictions <- read.csv(gbm_filtered_predictions_path)
 
 # Get the metrics
-metrics_gbm_filtered <- get_prediction_metrics(filtered_onehot_test, gbm_filtered_predictions)
-metrics_gbm_filtered$confusion
-metrics_gbm_filtered$metrics_table
+gbm_filtered_metrics <- get_prediction_metrics(filtered_onehot_test, gbm_filtered_predictions)
+gbm_filtered_metrics$confusion
+gbm_filtered_metrics$metrics_table
 ```
 
 Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-auc <- get_AUC_multiclass(filtered_onehot_test, gbm_filtered_predictions)
+gbm_filtered_auc <- get_AUC_multiclass(filtered_onehot_test, gbm_filtered_predictions)
 ```
 
 ### Stochastic Gradient Boosting
@@ -440,16 +440,16 @@ Now we can evaluate the model using the confusion matrix and other metrics.
 sgb_filtered_onehot_predictions <- read.csv(sgb_filtered_predictions_path)
 
 # Get the metrics
-metrics_sgb_filtered <- get_prediction_metrics(filtered_onehot_test, sgb_filtered_onehot_predictions)
-metrics_sgb_filtered$confusion
-metrics_sgb_filtered$metrics_table
+sgb_filtered_metrics <- get_prediction_metrics(filtered_onehot_test, sgb_filtered_onehot_predictions)
+sgb_filtered_metrics$confusion
+sgb_filtered_metrics$metrics_table
 ```
 
 Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-auc_sgb_filtered <- get_AUC_multiclass(filtered_onehot_test, sgb_filtered_onehot_predictions)
+sgb_filtered_auc <- get_AUC_multiclass(filtered_onehot_test, sgb_filtered_onehot_predictions)
 ```
 
 ## PCA Dataset
@@ -498,16 +498,16 @@ Now we can evaluate the model using the confusion matrix and other metrics.
 rf_weighted_predictions <- read.csv(rf_weighted_predictions_path)
 
 # Get the metrics
-metrics_rf_weighted <- get_prediction_metrics(weighted_test, rf_weighted_predictions)
-metrics_rf_weighted$confusion
-metrics_rf_weighted$metrics_table
+rf_weighted_metrics <- get_prediction_metrics(weighted_test, rf_weighted_predictions)
+rf_weighted_metrics$confusion
+rf_weighted_metrics$metrics_table
 ```
 
 Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-auc_rf_weighted <- get_AUC_multiclass(weighted_test, rf_weighted_predictions)
+rf_weighted_auc <- get_AUC_multiclass(weighted_test, rf_weighted_predictions)
 ```
 
 ### Gradient Boosting Machines
@@ -537,30 +537,30 @@ gbm_tuneGrid <- expand.grid(
 )
 
 # Define the model and predictions paths
-gbm_filtered_model_path <- "../models/gbm_filtered_onehot_model.RData"
-gbm_filtered_predictions_path <- "../data/predictions/gbm_filtered_onehot_predictions.csv"
+gbm_weighted_model_path <- "../models/gbm_weighted_model.RData"
+gbm_weighted_predictions_path <- "../data/predictions/gbm_weighted_predictions.csv"
 
 # Apply the algorithm
-gbm_filtered_model <- apply_algorithm("xgbTree", gbm_tuneGrid, filtered_onehot_train, filtered_onehot_test, gbm_filtered_model_path, gbm_filtered_predictions_path)
+gbm_weighted_model <- apply_algorithm("xgbTree", gbm_tuneGrid, weighted_train, weighted_test, gbm_weighted_model_path, gbm_weighted_predictions_path, use_weights = TRUE)
 ```
 
 Now we can evaluate the model using the confusion matrix and other metrics.
 
 ```{r}
 # Load the predictions
-gbm_filtered_predictions <- read.csv(gbm_filtered_predictions_path)
+gbm_weighted_predictions <- read.csv(gbm_weighted_predictions_path)
 
 # Get the metrics
-metrics_gbm_filtered <- get_prediction_metrics(filtered_onehot_test, gbm_filtered_predictions)
-metrics_gbm_filtered$confusion
-metrics_gbm_filtered$metrics_table
+gbm_weighted_metrics <- get_prediction_metrics(weighted_test, gbm_weighted_predictions)
+gbm_weighted_metrics$confusion
+gbm_weighted_metrics$metrics_table
 ```
 
 Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-auc <- get_AUC_multiclass(filtered_onehot_test, gbm_filtered_predictions)
+gbm_weighted_auc <- get_AUC_multiclass(weighted_test, gbm_weighted_predictions)
 ```
 
 ### Stochastic Gradient Boosting
@@ -584,40 +584,68 @@ sgb_tuneGrid <- expand.grid(
 )
 
 # Define the model and predictions paths
-sgb_filtered_model_path <- "../models/sgb_filtered_onehot_model.RData"
-sgb_filtered_predictions_path <- "../data/predictions/sgb_filtered_onehot_predictions.csv"
+sgb_weighted_model_path <- "../models/sgb_weighted_model.RData"
+sgb_weighted_predictions_path <- "../data/predictions/sgb_weighted_predictions.csv"
 
 # Apply the algorithm
-sgb_filtered_model <- apply_algorithm("gbm", sgb_tuneGrid, filtered_onehot_train, filtered_onehot_test, sgb_filtered_model_path, sgb_filtered_predictions_path)
+sgb_weighted_model <- apply_algorithm("gbm", sgb_tuneGrid, weighted_train, weighted_test, sgb_weighted_model_path, sgb_weighted_predictions_path, use_weights = TRUE)
 ```
 
 Now we can evaluate the model using the confusion matrix and other metrics.
 
 ```{r}
 # Load the predictions
-sgb_filtered_onehot_predictions <- read.csv(sgb_filtered_predictions_path)
+sgb_weighted_predictions <- read.csv(sgb_weighted_predictions_path)
 
 # Get the metrics
-metrics_sgb_filtered <- get_prediction_metrics(filtered_onehot_test, sgb_filtered_onehot_predictions)
-metrics_sgb_filtered$confusion
-metrics_sgb_filtered$metrics_table
+sgb_weighted_metrics <- get_prediction_metrics(weighted_test, sgb_weighted_predictions)
+sgb_weighted_metrics$confusion
+sgb_weighted_metrics$metrics_table
 ```
 
 Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-auc_sgb_filtered <- get_AUC_multiclass(filtered_onehot_test, sgb_filtered_onehot_predictions)
+sgb_weighted_auc <- get_AUC_multiclass(weighted_test, sgb_weighted_predictions)
 ```
 
 
 # F1-Score
 ```{r}
-# Convert F1 values to numeric
-x1 <- as.numeric(metrics_rf_weighted$metrics_table$F1[1])
-x2 <- as.numeric(metrics_rf_weighted$metrics_table$F1[2])
-x3 <- as.numeric(metrics_rf_weighted$metrics_table$F1[3])
-
-
-f1_mean <- mean(c(x1, x2, x3))
+calculate_f1_score <- function(metrics_table) {
+  if (!"F1" %in% colnames(metrics_table)) {
+    stop("The table does not contain an 'F1' column.")
+  }
+  
+  f1_scores <- as.numeric(metrics_table$F1)
+  
+  # Calculate the mean of the F1 scores
+  f1_score <- mean(f1_scores, na.rm = TRUE) # Use na.rm = TRUE to handle missing values
+  
+  return(f1_score)
+}
 ```
+
+
+```{r}
+rf_onehot_f1 <- calculate_f1_score(rf_onehot_metrics$metrics_table)
+rf_filtered_f1 <- calculate_f1_score(rf_filtered_metrics$metrics_table)
+rf_weighted_f1 <- calculate_f1_score(rf_weighted_metrics$metrics_table)
+gbm_onehot_f1 <- calculate_f1_score(gbm_onehot_metrics$metrics_table)
+gbm_filtered_f1 <- calculate_f1_score(gbm_filtered_metrics$metrics_table)
+gbm_weighted_f1 <- calculate_f1_score(gbm_weighted_metrics$metrics_table)
+sgb_onehot_f1 <- calculate_f1_score(sgb_onehot_metrics$metrics_table)
+sgb_filtered_f1 <- calculate_f1_score(sgb_filtered_metrics$metrics_table)
+sgb_weighted_f1 <- calculate_f1_score(sgb_weighted_metrics$metrics_table)
+rf_onehot_f1
+rf_filtered_f1
+rf_weighted_f1
+gbm_onehot_f1
+gbm_filtered_f1
+gbm_weighted_f1
+sgb_onehot_f1
+sgb_filtered_f1
+sgb_weighted_f1
+
+````
