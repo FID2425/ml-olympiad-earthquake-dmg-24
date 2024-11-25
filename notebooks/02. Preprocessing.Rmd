@@ -341,7 +341,7 @@ pca_components_df <- as.data.frame(pca_result$x)
 pca_components <- pca_components_df[, 1:num_components]
 
 # Add the target variable back to the dataset
-pca_data <- cbind(pca_components, processed_data$damage_grade)
+pca_data <- cbind(pca_components, damage_grade = processed_data$damage_grade)
 
 head(pca_data)
 dim(pca_data)
@@ -400,6 +400,8 @@ synthetic_data_smote$class <- as.factor(synthetic_data_smote$class)
 
 smoted_df <- apply_smote(synthetic_data_smote, "class",dup_size = 1)
 smoted_df$class <- as.factor(smoted_df$class)
+smoted_df <- smoted_df %>%
+  rename(damage_grade = class)
 
 # Check the distribution of the target variable after applying SMOTE 2 times
 table(smoted_df$class)
@@ -558,7 +560,7 @@ pca_components_df_test <- as.data.frame(pca_result_test$x)
 pca_components_test <- pca_components_df_test[, 1:num_components_test]
 
 # Add the target variable back to the dataset
-pca_data_test <- cbind(pca_components_test, processed_data_test$damage_grade)
+pca_data_test <- cbind(pca_components_test, damage_grade = processed_data_test$damage_grade)
 ```
 
 At this point, we are going to generate a csv file with the data after applying PCA, in order to use it in the next steps.
