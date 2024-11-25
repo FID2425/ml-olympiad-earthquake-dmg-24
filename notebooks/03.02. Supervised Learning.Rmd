@@ -453,9 +453,257 @@ sgb_filtered_auc <- get_AUC_multiclass(filtered_onehot_test, sgb_filtered_onehot
 ```
 
 ## PCA Dataset
+
+We will load the `pca_train.csv` and `pca_test.csv` datasets and apply the classification algorithms to them.
+
+```{r}
+# Load the dataset
+pca_train <- read.csv("../data/processed/train/pca_train.csv")
+
+# Load the test dataset
+pca_test <- read.csv("../data/processed/test/pca_test.csv")
+```
+
+### Random Forest
+
+```{r}
+# Define the tuning grid
+rf_pca_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+                        .splitrule = "gini",
+                        .min.node.size = c(1, 5, 10, 15, 20))
+
+# Define the model and predictions paths
+rf_pca_model_path <- "../models/rf_pca_model.RData"
+rf_pca_predictions_path <- "../data/predictions/rf_pca_predictions.csv"
+
+# Apply the algorithm
+rf_pca_model <- apply_algorithm("ranger", rf_pca_tuneGrid, pca_train, pca_test, rf_pca_model_path, rf_pca_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+rf_pca_predictions <- read.csv(rf_pca_predictions_path)
+
+# Get the metrics
+rf_pca_metrics <- get_prediction_metrics(pca_test, rf_pca_predictions)
+rf_pca_metrics$confusion
+rf_pca_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+rf_pca_auc <- get_AUC_multiclass(pca_test, rf_pca_predictions)
+```
+
+### Gradient Boosting Machines
+
+```{r}
+# Define the tuning grid
+gbm_pca_tuneGrid <- expand.grid(
+  .nrounds = c(50, 100),              
+  .max_depth = c(3, 4),                
+  .eta = c(0.1, 0.3),                  
+  .gamma = c(0, 0.1),                  
+  .colsample_bytree = c(0.7, 0.9),     
+  .min_child_weight = c(1, 3),         
+  .subsample = c(0.7, 0.9)             
+)
+
+# Define the model and predictions paths
+gbm_pca_model_path <- "../models/gbm_pca_model.RData"
+gbm_pca_predictions_path <- "../data/predictions/gbm_pca_predictions.csv"
+
+# Apply the algorithm
+gbm_pca_model <- apply_algorithm("xgbTree", gbm_pca_tuneGrid, pca_train, pca_test, gbm_pca_model_path, gbm_pca_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+gbm_pca_predictions <- read.csv(gbm_pca_predictions_path)
+
+# Get the metrics
+gbm_pca_metrics <- get_prediction_metrics(pca_test, gbm_pca_predictions)
+gbm_pca_metrics$confusion
+gbm_pca_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+gbm_pca_auc <- get_AUC_multiclass(pca_test, gbm_pca_predictions)
+```
+
+### Stochastic Gradient Boosting
+
+```{r}
+# Define the tuning grid
+sgb_pca_tuneGrid <- expand.grid(
+  .n.trees = c(50, 100),              
+  .interaction.depth = c(3, 4),       
+  .shrinkage = c(0.1, 0.3),           
+  .n.minobsinnode = c(10, 20)         
+)
+
+# Define the model and predictions paths
+sgb_pca_model_path <- "../models/sgb_pca_model.RData"
+sgb_pca_predictions_path <- "../data/predictions/sgb_pca_predictions.csv"
+
+# Apply the algorithm
+sgb_pca_model <- apply_algorithm("gbm", sgb_pca_tuneGrid, pca_train, pca_test, sgb_pca_model_path, sgb_pca_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+sgb_pca_predictions <- read.csv(sgb_pca_predictions_path)
+
+# Get the metrics
+sgb_pca_metrics <- get_prediction_metrics(pca_test, sgb_pca_predictions)
+sgb_pca_metrics$confusion
+sgb_pca_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+sgb_pca_auc <- get_AUC_multiclass(pca_test, sgb_pca_predictions)
+```
  
 ## SMOTE Dataset
- 
+
+We will load the `smote_train.csv` and `filtered_onehot_test.csv` datasets and apply the classification algorithms to them.
+
+```{r}
+# Load the dataset
+smote_train <- read.csv("../data/processed/train/smote_train.csv")
+
+# Load the test dataset
+smote_test <- read.csv("../data/processed/test/filtered_onehot_test.csv")
+```
+
+### Random Forest
+
+```{r}
+# Define the tuning grid
+rf_smote_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+                        .splitrule = "gini",
+                        .min.node.size = c(1, 5, 10, 15, 20))
+
+# Define the model and predictions paths
+rf_smote_model_path <- "../models/rf_smote_model.RData"
+rf_smote_predictions_path <- "../data/predictions/rf_smote_predictions.csv"
+
+# Apply the algorithm
+rf_smote_model <- apply_algorithm("ranger", rf_smote_tuneGrid, smote_train, smote_test, rf_smote_model_path, rf_smote_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+rf_smote_predictions <- read.csv(rf_smote_predictions_path)
+
+# Get the metrics
+rf_smote_metrics <- get_prediction_metrics(smote_test, rf_smote_predictions)
+rf_smote_metrics$confusion
+rf_smote_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+rf_smote_auc <- get_AUC_multiclass(smote_test, rf_smote_predictions)
+```
+
+### Gradient Boosting Machines
+
+```{r}
+# Define the tuning grid
+gbm_smote_tuneGrid <- expand.grid(
+  .nrounds = c(50, 100),              
+  .max_depth = c(3, 4),                
+  .eta = c(0.1, 0.3),                  
+  .gamma = c(0, 0.1),                  
+  .colsample_bytree = c(0.7, 0.9),     
+  .min_child_weight = c(1, 3),         
+  .subsample = c(0.7, 0.9)             
+)
+
+# Define the model and predictions paths
+gbm_smote_model_path <- "../models/gbm_smote_model.RData"
+gbm_smote_predictions_path <- "../data/predictions/gbm_smote_predictions.csv"
+
+# Apply the algorithm
+gbm_smote_model <- apply_algorithm("xgbTree", gbm_smote_tuneGrid, smote_train, smote_test, gbm_smote_model_path, gbm_smote_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+gbm_smote_predictions <- read.csv(gbm_smote_predictions_path)
+
+# Get the metrics
+gbm_smote_metrics <- get_prediction_metrics(smote_test, gbm_smote_predictions)
+gbm_smote_metrics$confusion
+gbm_smote_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+gbm_smote_auc <- get_AUC_multiclass(smote_test, gbm_smote_predictions)
+```
+
+### Stochastic Gradient Boosting
+
+```{r}
+# Define the tuning grid
+sgb_smote_tuneGrid <- expand.grid(
+  .n.trees = c(50, 100),              
+  .interaction.depth = c(3, 4),       
+  .shrinkage = c(0.1, 0.3),           
+  .n.minobsinnode = c(10, 20)         
+)
+
+# Define the model and predictions paths
+sgb_smote_model_path <- "../models/sgb_smote_model.RData"
+sgb_smote_predictions_path <- "../data/predictions/sgb_smote_predictions.csv"
+
+# Apply the algorithm
+sgb_smote_model <- apply_algorithm("gbm", sgb_smote_tuneGrid, smote_train, smote_test, sgb_smote_model_path, sgb_smote_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+sgb_smote_predictions <- read.csv(sgb_smote_predictions_path)
+
+# Get the metrics
+sgb_smote_metrics <- get_prediction_metrics(smote_test, sgb_smote_predictions)
+sgb_smote_metrics$confusion
+sgb_smote_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+sgb_smote_auc <- get_AUC_multiclass(smote_test, sgb_smote_predictions)
+```
+
 ## Weighted Dataset
 
 We will load the `weighted_train.csv` and `weighted_test.csv` datasets and apply the classification algorithms to them.
@@ -631,21 +879,37 @@ calculate_f1_score <- function(metrics_table) {
 ```{r}
 rf_onehot_f1 <- calculate_f1_score(rf_onehot_metrics$metrics_table)
 rf_filtered_f1 <- calculate_f1_score(rf_filtered_metrics$metrics_table)
+rf_pca_f1 <- calculate_f1_score(rf_pca_metrics$metrics_table)
+rf_smote_f1 <- calculate_f1_score(rf_smote_metrics$metrics_table)
 rf_weighted_f1 <- calculate_f1_score(rf_weighted_metrics$metrics_table)
+
 gbm_onehot_f1 <- calculate_f1_score(gbm_onehot_metrics$metrics_table)
 gbm_filtered_f1 <- calculate_f1_score(gbm_filtered_metrics$metrics_table)
+gbm_pca_f1 <- calculate_f1_score(gbm_pca_metrics$metrics_table)
+gbm_smote_f1 <- calculate_f1_score(gbm_smote_metrics$metrics_table)
 gbm_weighted_f1 <- calculate_f1_score(gbm_weighted_metrics$metrics_table)
+
 sgb_onehot_f1 <- calculate_f1_score(sgb_onehot_metrics$metrics_table)
 sgb_filtered_f1 <- calculate_f1_score(sgb_filtered_metrics$metrics_table)
+sgb_pca_f1 <- calculate_f1_score(sgb_pca_metrics$metrics_table)
+sgb_smote_f1 <- calculate_f1_score(sgb_smote_metrics$metrics_table)
 sgb_weighted_f1 <- calculate_f1_score(sgb_weighted_metrics$metrics_table)
+
 rf_onehot_f1
 rf_filtered_f1
+rf_pca_f1
+rf_smote_f1
 rf_weighted_f1
+
 gbm_onehot_f1
 gbm_filtered_f1
+gbm_pca_f1
+gbm_smote_f1
 gbm_weighted_f1
+
 sgb_onehot_f1
 sgb_filtered_f1
+sgb_pca_f1
+sgb_smote_f1
 sgb_weighted_f1
-
 ````
