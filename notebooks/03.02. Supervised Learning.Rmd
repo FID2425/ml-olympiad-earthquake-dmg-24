@@ -154,6 +154,7 @@ onehot_train <- read.csv("../data/processed/train/onehot_train.csv")
 
 # Load the test dataset
 onehot_test <- read.csv("../data/processed/test/onehot_test.csv")
+
 ```
 
 ### Random Forest
@@ -843,7 +844,7 @@ Now we can evaluate the model using the confusion matrix and other metrics.
 
 ```{r}
 # Load the predictions
-sgb_weighted_predictions <- read.csv(sgb_weighted_predictions_path)
+sgb_weighted_predictions <- read.csv("../data/predictions/sgb_weighted_predictions.csv")
 
 # Get the metrics
 sgb_weighted_metrics <- get_prediction_metrics(weighted_test, sgb_weighted_predictions)
@@ -895,21 +896,113 @@ sgb_pca_f1 <- calculate_f1_score(sgb_pca_metrics$metrics_table)
 sgb_smote_f1 <- calculate_f1_score(sgb_smote_metrics$metrics_table)
 sgb_weighted_f1 <- calculate_f1_score(sgb_weighted_metrics$metrics_table)
 
-rf_onehot_f1
-rf_filtered_f1
-rf_pca_f1
-rf_smote_f1
-rf_weighted_f1
+f1_score_df <- data.frame(
+  onehot = c(rf_onehot_f1, gbm_onehot_f1, sgb_onehot_f1),
+  filtered = c(rf_filtered_f1, gbm_filtered_f1, sgb_filtered_f1),
+  pca = c(rf_pca_f1, gbm_pca_f1, sgb_pca_f1),
+  smote = c(rf_smote_f1, gbm_smote_f1, sgb_smote_f1),
+  weighted = c(rf_weighted_f1, gbm_weighted_f1, sgb_weighted_f1),
+  row.names = c("rf", "gbm", "sgb")
+)
 
-gbm_onehot_f1
-gbm_filtered_f1
-gbm_pca_f1
-gbm_smote_f1
-gbm_weighted_f1
+print(f1_score_df)
 
-sgb_onehot_f1
-sgb_filtered_f1
-sgb_pca_f1
-sgb_smote_f1
-sgb_weighted_f1
-````
+## Save the table in a csv
+write.csv(f1_score_df, "../results/supervised/f1_score.csv", row.names = TRUE)
+```
+
+
+```{r}
+# Function to extract and store metrics from a table
+extract_metrics <- function(metrics_table, algorithm, dataset) {
+  # Add a suffix to identify the algorithm_dataset combination
+  colnames(metrics_table) <- paste0(algorithm, "_", dataset, "_", colnames(metrics_table))
+  return(metrics_table)
+}
+
+# Lists to store all metrics for different algorithms and datasets
+sensitivities <- list()
+specificities <- list()
+pos_pred_values <- list()
+neg_pred_values <- list()
+precisions <- list()
+recalls <- list()
+f1_scores <- list()
+prevalences <- list()
+detection_rates <- list()
+detection_prevalences <- list()
+balanced_accuracies <- list()
+
+# Function to process each metrics table
+process_metrics <- function(metrics_table, algorithm, dataset) {
+  sensitivities[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Sensitivity
+  specificities[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Specificity
+  pos_pred_values[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Pos Pred Value`
+  neg_pred_values[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Neg Pred Value`
+  precisions[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Precision
+  recalls[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Recall
+  f1_scores[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$F1
+  prevalences[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Prevalence
+  detection_rates[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Detection Rate`
+  detection_prevalences[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Detection Prevalence`
+  balanced_accuracies[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Balanced Accuracy`
+}
+
+# Process metrics for each algorithm and dataset combination
+process_metrics(rf_onehot_metrics$metrics_table, "rf", "onehot")
+process_metrics(rf_filtered_metrics$metrics_table, "rf", "filtered")
+process_metrics(rf_pca_metrics$metrics_table, "rf", "pca")
+process_metrics(rf_smote_metrics$metrics_table, "rf", "smote")
+process_metrics(rf_weighted_metrics$metrics_table, "rf", "weighted")
+
+
+process_metrics(gbm_onehot_metrics$metrics_table, "gbm", "onehot")
+process_metrics(gbm_filtered_metrics$metrics_table, "gbm", "filtered")
+process_metrics(gbm_pca_metrics$metrics_table, "gbm", "pca")
+process_metrics(gbm_smote_metrics$metrics_table, "gbm", "smote")
+process_metrics(gbm_weighted_metrics$metrics_table, "gbm", "weighted")
+
+process_metrics(sgb_onehot_metrics$metrics_table, "sgb", "onehot")
+process_metrics(sgb_filtered_metrics$metrics_table, "sgb", "filtered")
+process_metrics(sgb_pca_metrics$metrics_table, "sgb", "pca")
+process_metrics(sgb_smote_metrics$metrics_table, "sgb", "smote")
+process_metrics(sgb_weighted_metrics$metrics_table, "sgb", "weighted")
+
+# Combine results into tables for each metric
+table_sensitivities <- do.call(cbind, sensitivities)
+table_specificities <- do.call(cbind, specificities)
+table_pos_pred_values <- do.call(cbind, pos_pred_values)
+table_neg_pred_values <- do.call(cbind, neg_pred_values)
+table_precisions <- do.call(cbind, precisions)
+table_recalls <- do.call(cbind, recalls)
+table_f1_scores <- do.call(cbind, f1_scores)
+table_prevalences <- do.call(cbind, prevalences)
+table_detection_rates <- do.call(cbind, detection_rates)
+table_detection_prevalences <- do.call(cbind, detection_prevalences)
+table_balanced_accuracies <- do.call(cbind, balanced_accuracies)
+
+print(table_sensitivities)
+print(table_specificities)
+print(table_pos_pred_values)
+print(table_neg_pred_values)
+print(table_precisions)
+print(table_recalls)
+print(table_f1_scores)
+print(table_prevalences)
+print(table_detection_rates)
+print(table_detection_prevalences)
+print(table_balanced_accuracies)
+
+# Save the tables in csv files
+write.csv(table_sensitivities, "../results/supervised/sensitivities.csv", row.names = TRUE)
+write.csv(table_specificities, "../results/supervised/specificities.csv", row.names = TRUE)
+write.csv(table_pos_pred_values, "../results/supervised/pos_pred_values.csv", row.names = TRUE)
+write.csv(table_neg_pred_values, "../results/supervised/neg_pred_values.csv", row.names = TRUE)
+write.csv(table_precisions, "../results/supervised/precisions.csv", row.names = TRUE)
+write.csv(table_recalls, "../results/supervised/recalls.csv", row.names = TRUE)
+write.csv(table_f1_scores, "../results/supervised/f1_scores.csv", row.names = TRUE)
+write.csv(table_prevalences, "../results/supervised/prevalences.csv", row.names = TRUE)
+write.csv(table_detection_rates, "../results/supervised/detection_rates.csv", row.names = TRUE)
+write.csv(table_detection_prevalences, "../results/supervised/detection_prevalences.csv", row.names = TRUE)
+write.csv(table_balanced_accuracies, "../results/supervised/balanced_accuracies.csv", row.names = TRUE)
+```
