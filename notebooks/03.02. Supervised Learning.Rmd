@@ -1006,3 +1006,59 @@ write.csv(table_detection_rates, "../results/supervised/detection_rates.csv", ro
 write.csv(table_detection_prevalences, "../results/supervised/detection_prevalences.csv", row.names = TRUE)
 write.csv(table_balanced_accuracies, "../results/supervised/balanced_accuracies.csv", row.names = TRUE)
 ```
+
+Finally, we will define the `get_summary` function to get a summary of the metrics for each class. The function will calculate the maximum, mean, and median values for each metric and class. In the case of `Prevalence` and `Detection Prevalence`, only the mean and median values will be calculated, as the maximum value is not relevant.
+
+```{r}
+files <- c(
+  "../results/supervised/sensitivities.csv",
+  "../results/supervised/specificities.csv",
+  "../results/supervised/pos_pred_values.csv",
+  "../results/supervised/neg_pred_values.csv",
+  "../results/supervised/precisions.csv",
+  "../results/supervised/recalls.csv",
+  "../results/supervised/f1_scores.csv",
+  "../results/supervised/prevalences.csv",
+  "../results/supervised/detection_rates.csv",
+  "../results/supervised/detection_prevalences.csv",
+  "../results/supervised/balanced_accuracies.csv"
+)
+
+metrics_only_mean_median <- c("prevalences", "detection_prevalences")
+
+get_summary <- function(file) {
+  data <- read.csv(file, header = TRUE, row.names = 1)
+  
+  # Extract the metric name from the file name
+  metric_name <- tools::file_path_sans_ext(basename(file))
+  
+  summary <- data.frame(
+    Class = rownames(data),
+    Mean = apply(data, 1, mean),
+    Median = apply(data, 1, median)
+  )
+  
+  if (!(metric_name %in% metrics_only_mean_median)) {
+    # Find the maximum value and the corresponding model
+    max_values <- apply(data, 1, max)
+    max_models <- apply(data, 1, function(row) colnames(data)[which.max(row)])
+    
+    summary$Maximum <- max_values
+    summary$BestModel <- max_models
+  }
+  
+  return(summary)
+}
+
+invisible(lapply(files, function(file) {
+  summary <- get_summary(file)
+  metric_name <- tools::file_path_sans_ext(basename(file))
+  output_file <- paste0("../results/supervised/summary/", metric_name, "_summary.csv")
+  
+  write.csv(summary, output_file, row.names = FALSE)
+  
+  cat("Saved summary for", metric_name, "to", output_file, "\n")
+}))
+
+```
+
