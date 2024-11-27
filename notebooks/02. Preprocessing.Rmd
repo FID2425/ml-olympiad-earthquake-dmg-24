@@ -539,7 +539,7 @@ We will apply PCA to the test set to reduce the number of features and ensure co
 
 ```{r}
 # Remove the target variable
-data_without_target_test <- processed_data_test %>% select(-damage_grade)
+data_without_target_test <- processed_data_test
 
 # Standardize the data
 data_scaled_test <- scale(data_without_target_test)
@@ -562,7 +562,7 @@ pca_components_df_test <- as.data.frame(pca_result_test$x)
 pca_components_test <- pca_components_df_test[, 1:num_components_test]
 
 # Add the target variable back to the dataset
-pca_data_test <- cbind(pca_components_test, damage_grade = processed_data_test$damage_grade)
+pca_data_test <- pca_components_test
 ```
 
 At this point, we are going to generate a csv file with the data after applying PCA, in order to use it in the next steps.

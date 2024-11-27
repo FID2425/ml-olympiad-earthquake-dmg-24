@@ -35,6 +35,7 @@ library(caret)
 library(pROC)
 library(ggplot2)
 library(xgboost)
+library(dplyr)
 ```
 
 The following function will be used to apply the classification algorithms to the datasets. It will train the model, save it, predict the test data, save the predictions, and return the trained model.
@@ -44,29 +45,26 @@ apply_algorithm <- function(algorithm, tuneGrid, train_data, test_data, model_pa
   # Record start time
   start_time <- Sys.time()
   
-  # Convert the target column to a factor
-  train_data$damage_grade <- as.factor(train_data$damage_grade)
-  levels(train_data$damage_grade) <- make.names(levels(train_data$damage_grade))
   
-  # Check if weights should be used
-  weights <- NULL
-  if (use_weights && "weights" %in% colnames(train_data)) {
-    weights <- train_data$weights
-  }
+  # Load the model (train_data will not be used)
+  load(model_path)
   
-  # Train the model
-  set.seed(123)
-  model <- train(
-    x = train_data %>% select(-damage_grade, -weights), # Exclude damage_grade and weights
-    y = train_data$damage_grade,
-    method = algorithm,
-    trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
-    tuneGrid = tuneGrid,
-    weights = weights # Pass weights if available
-  )
+  # Características esperadas por el modelo
+  expected_features <- model$feature_names
   
-  # Save the model
-  save(model, file = model_path)
+  # Características en el conjunto de prueba
+  test_features <- colnames(test_data)
+  
+  # Comparar columnas faltantes en test_data
+  missing_features <- setdiff(expected_features, test_features)
+  cat("Columnas faltantes en test_data:\n")
+  print(missing_features)
+  
+  # Comparar columnas adicionales en test_data
+  extra_features <- setdiff(test_features, expected_features)
+  cat("Columnas adicionales en test_data:\n")
+  print(extra_features)
+
   
   # Predict the test data
   test_data$damage_grade_pred <- predict(model, newdata = test_data)
@@ -1056,5 +1054,42 @@ invisible(lapply(files, function(file) {
   cat("Saved summary for", metric_name, "to", output_file, "\n")
 }))
 
+```
+
+# Create submission file
+
+```{r}
+process_damage_grade <- function(input_file, output_file) {
+  data <- read.csv(input_file)
+  
+  new_data <- data %>%
+    mutate(
+      building_id = seq(0, nrow(data) - 1),
+      damage_grade = as.numeric(sub("X", "", damage_grade_pred))
+    ) %>%
+    select(building_id, damage_grade)
+  
+  write.csv(new_data, output_file, row.names = FALSE)
+  
+  message("Submission file created:", output_file)
+}
+
+process_damage_grade("../data/predictions/rf_onehot_predictions.csv", "../results/rf_onehot_submission.csv")
+process_damage_grade("../data/predictions/rf_filtered_onehot_predictions.csv", "../results/rf_filtered_onehot_submission.csv")
+process_damage_grade("../data/predictions/rf_pca_predictions.csv", "../results/rf_pca_submission.csv")
+process_damage_grade("../data/predictions/rf_smote_predictions.csv", "../results/rf_smote_submission.csv")
+process_damage_grade("../data/predictions/rf_weighted_predictions.csv", "../results/rf_weighted_submission.csv")
+
+process_damage_grade("../data/predictions/gbm_onehot_predictions.csv", "../results/gbm_onehot_submission.csv")
+process_damage_grade("../data/predictions/gbm_filtered_onehot_predictions.csv", "../results/gbm_filtered_onehot_submission.csv")
+process_damage_grade("../data/predictions/gbm_pca_predictions.csv", "../results/gbm_pca_submission.csv")
+process_damage_grade("../data/predictions/gbm_smote_predictions.csv", "../results/gbm_smote_submission.csv")
+process_damage_grade("../data/predictions/gbm_weighted_predictions.csv", "../results/gbm_weighted_submission.csv")
+
+process_damage_grade("../data/predictions/sgb_onehot_predictions.csv", "../results/sgb_onehot_submission.csv")
+process_damage_grade("../data/predictions/sgb_filtered_onehot_predictions.csv", "../results/sgb_filtered_onehot_submission.csv")
+process_damage_grade("../data/predictions/sgb_pca_predictions.csv", "../results/sgb_pca_submission.csv")
+process_damage_grade("../data/predictions/sgb_smote_predictions.csv", "../results/sgb_smote_submission.csv")
+process_damage_grade("../data/predictions/sgb_weighted_predictions.csv", "../results/sgb_weighted_submission.csv")
 ```
 
