@@ -102,36 +102,6 @@ At this point, we are going to generate a csv file with the data after column un
 write.csv(clean_data, "../data/processed/clean_data.csv", row.names = FALSE)
 ```
 
-## Train-test split
-
-After cleaning the data, we will split the dataset into training and testing sets to prepare for further analysis and modeling. We will use a stratified 80-20 split to ensure that the distribution of the target variable is consistent between the training and testing sets. 
-
-```{r}
-library(caret)
-
-# Set the seed for reproducibility
-set.seed(123)
-
-# Split the data into training and testing sets
-train_size <- 0.8
-train_index <- createDataPartition(clean_data$damage_grade, p = train_size, list = FALSE)
-
-train_data <- clean_data[train_index, ]
-test_data <- clean_data[-train_index, ]
-
-# View the dimensions of the training and testing sets
-dim(train_data)
-dim(test_data)
-
-# Check the distribution of the target variable in the training and testing sets
-table(train_data$damage_grade)
-table(test_data$damage_grade)
-
-# Save the training and testing sets to CSV files
-write.csv(train_data, "../data/processed/train/train.csv", row.names = FALSE)
-write.csv(test_data, "../data/processed/test/test.csv", row.names = FALSE)
-```
-
 ## Train set preprocessing
 
 In this section, we will perform preprocessing tasks on the training set to prepare the data for further analysis and modeling. We will apply the following steps:
@@ -153,11 +123,11 @@ We will apply one-hot encoding to the following categorical variables: - `land_s
 # Perform one-hot encoding
 ## Convert categorical variables to binary columns
 
-df_one_hot <- train_data
+df_one_hot <- clean_data
 
 # Function to rename columns with a separator and create binary columns
 rename_columns <- function(column_names) {
-  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = train_data)
+  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = clean_data)
   colnames(one_hot_data) <- paste(column_names, sub(column_names, "", colnames(one_hot_data)), sep = "_")
   return(one_hot_data)
 }
@@ -173,7 +143,7 @@ one_hot_position <- rename_columns("position")
 # Combine the original data frame with the renamed one-hot encoded columns
 
 df_one_hot <- cbind(
-  train_data,
+  clean_data,
   one_hot_land_surface_condition,
   one_hot_foundation_type,
   one_hot_roof_type,
@@ -455,6 +425,38 @@ write.csv(processed_data, "../data/processed/train/weighted_train.csv", row.name
 
 In the case of the test set, we need to apply the same preprocessing steps as the training set to ensure consistency and compatibility between the datasets. 
 
+### Column unification
+
+#### Unify Has_secondary_use columns
+
+```{r}
+# Load the data
+test_data <- read.csv("../data/raw/raw_data_test.csv")
+
+## Remove the has_secondary_use column
+new_df <- test_data %>% select(-has_secondary_use)
+
+# Unify the has_secondary_use columns
+data <- test_data %>%
+  mutate(has_secondary_use = if_else(
+    rowSums(select(., starts_with("has_secondary_use_"))) > 0, 
+    1, 
+    0
+  ))
+```
+
+### Column elimination
+
+```{r}
+clean_data <- data %>%
+  select(-building_id, -plan_configuration, -legal_ownership_status, -count_families, -has_secondary_use_use_police, -has_secondary_use_gov_office, -has_secondary_use_health_post, -has_secondary_use_industry, -has_secondary_use_institution, -has_secondary_use_school, -has_secondary_use_other)
+
+# View data
+head(clean_data)
+dim(clean_data)
+str(clean_data)
+```
+
 ### Column encoding
 
 #### One-Hot Encoding
@@ -465,11 +467,11 @@ As we did with the training set, we will apply one-hot encoding to the categoric
 # Perform one-hot encoding
 ## Convert categorical variables to binary columns
 
-df_one_hot_test <- test_data
+df_one_hot_test <- clean_data
 
 # Function to rename columns with a separator and create binary columns
 rename_columns <- function(column_names) {
-  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = test_data)
+  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = clean_data)
   colnames(one_hot_data) <- paste(column_names, sub(column_names, "", colnames(one_hot_data)), sep = "_")
   return(one_hot_data)
 }
@@ -485,7 +487,7 @@ one_hot_position <- rename_columns("position")
 # Combine the original data frame with the renamed one-hot encoded columns
 
 df_one_hot_test <- cbind(
-  test_data,
+  clean_data,
   one_hot_land_surface_condition,
   one_hot_foundation_type,
   one_hot_roof_type,

@@ -68,10 +68,6 @@ apply_algorithm <- function(algorithm, tuneGrid, train_data, test_data, model_pa
   # Save the model
   save(model, file = model_path)
   
-  # Prepare the test data
-  test_data$damage_grade <- as.factor(test_data$damage_grade)
-  levels(test_data$damage_grade) <- levels(train_data$damage_grade) # Ensure levels match training data
-  
   # Predict the test data
   test_data$damage_grade_pred <- predict(model, newdata = test_data)
   
