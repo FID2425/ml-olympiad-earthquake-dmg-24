@@ -1,0 +1,83 @@
+---
+output: html_document
+---
+
+# Title
+
+*Should be brief and explanatory* (0.25 points)
+
+# Summary
+
+*A paragraph summarizing the presented content* (0.5 points)
+
+# Introduction
+
+*Outline the general problem and where the data comes from* (0.5 points)
+
+# Methodology
+
+## Data
+
+*Initial exploration of the data to understand the problem: preprocessing and visualization*
+
+### Preprocessing
+
+After the exploratory data analysis (EDA), we decided on a structured preprocessing approach to ensure the dataset was prepared for effective machine learning modeling. This phase included several crucial steps designed to clean the data, handle imbalanced class distributions, and format the dataset for optimal performance during model training and evaluation. The preprocessing steps are outlined below:
+
+#### 1. Data Cleaning
+
+The first step involved cleaning the dataset to ensure data integrity and consistency. Unnecessary columns that did not contribute to the predictive task were removed. Missing values were addressed by employing appropriate imputation techniques or removing rows/columns where necessary. 
+- **Column Unification:** The `has_secondary_use` column was recalculated using related columns (`has_secondary_use_etc`) to address potential inconsistencies. The new unified column ensures centralized and reliable information.
+- **Column Elimination:** Based on insights from the EDA, the following columns were removed: `building_id`, `plan_configuration`, `legal_ownership_status`, `count_families`, `has_secondary_use_police`, `has_secondary_use_gov_office`, `has_secondary_use_health_post`, `has_secondary_use_industry`, `has_secondary_use_institution`, `has_secondary_use_school`, and `has_secondary_use_other`. These columns were deemed non-contributive to the predictive task. After these changes, the dataset was reduced to 26 columns. A CSV file was generated at this stage for future use.
+
+#### 2. Train-Test Split
+
+The dataset was split into training and testing subsets using a stratified approach. Stratification ensured that the distribution of the target variable remained consistent across both subsets, providing a robust basis for model evaluation. The `caret` library was used to implement this split, ensuring a clear and reproducible methodology.
+
+#### 3. One-Hot Encoding
+
+Categorical variables were transformed into a numerical format using one-hot encoding. This process involved creating binary columns for each category within variables like `land_surface_condition`, `foundation_type`, `roof_type`, `ground_floor_type`, `other_floor_type`, and `position`. This step significantly increased the number of columns, making the data compatible with machine learning algorithms.
+
+#### 4. Correlation Analysis
+
+To identify and handle multicollinearity, a correlation analysis was performed. Two pairs of highly correlated columns were identified: `land_surface_condition_n` and `position_s`, and `land_surface_condition_t` and `position_t`. The columns with the lowest variance in each pair were removed to retain the most informative features. This step helped reduce redundancy in the dataset and improve model interpretability. We saved this dataset as `filtered_onehot` for further analysis.
+
+#### 5. Principal Component Analysis (PCA)
+
+Principal Component Analysis (PCA) was applied to reduce the dimensionality of the dataset.The data was standardized to ensure equal scaling across all features. Then, we used the Kaiser criterion to retain the first 13 principal components, preserving significant variance while reducing the dataset’s complexity. The target variable (`damage_grade`) was re-added after applying PCA. We saved this dataset as `pca` for subsequent analysis.
+
+#### 6. Handling Imbalanced Data
+
+Class imbalance, a common challenge in machine learning, was addressed using two complementary techniques:
+
+-   **SMOTE (Synthetic Minority Oversampling Technique):** To balance the dataset, synthetic samples were generated for the minority class. SMOTE uses the nearest neighbors of existing minority class instances to create new, similar samples. This technique increased the representation of the minority class, enabling the model to learn effectively from all classes. The implementation was carried out using the `smotefamily` package in R, ensuring practical applicability and reproducibility. We saved this dataset as `smote` for further analysis.
+
+-   **Weight Allocation:** To further mitigate the effects of class imbalance, weights were assigned to samples based on their class distribution. Higher weights were given to minority class samples, encouraging the model to prioritize these instances during training. This approach reduced the risk of biased predictions and improved overall model performance. The weighted dataset was saved as `weighted` for subsequent analysis.
+
+### Summary
+
+The preprocessing phase established a strong foundation for machine learning by cleaning the data, addressing class imbalance, and ensuring that the dataset was properly formatted. Each step—from data cleaning to PCA—was implemented with the goal of enhancing model performance and ensuring robust and reliable predictions. By following these preprocessing steps, the dataset was effectively prepared for further analysis and model development.
+
+## Analysis I
+
+*Tasks: supervised analysis, unsupervised analysis, comparison of results, etc.* (3 points)
+
+## Analysis II
+
+*Results: tables and/or figures presenting the obtained results* (1.5 points)
+
+## Discussion
+
+*Conclusions that can be drawn from the results* (1.5 points)
+
+# Conclusions
+
+*A brief paragraph that "dialogues" with the initial summary* (0.5 points)
+
+# Bibliography
+
+*References to the data and, if relevant, additional sources* (0.5 points)
+
+# Optional
+
+*Deep dive into topics or techniques not covered in class (e.g., filters, wrappers, etc.)* (3 points)
