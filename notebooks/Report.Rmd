@@ -27,16 +27,17 @@ After the exploratory data analysis (EDA), we decided on a structured preprocess
 #### 1. Data Cleaning
 
 The first step involved cleaning the dataset to ensure data integrity and consistency. Unnecessary columns that did not contribute to the predictive task were removed. Missing values were addressed by employing appropriate imputation techniques or removing rows/columns where necessary. 
-- **Column Unification:** The `has_secondary_use` column was recalculated using related columns (`has_secondary_use_etc`) to address potential inconsistencies. The new unified column ensures centralized and reliable information.
-- **Column Elimination:** Based on insights from the EDA, the following columns were removed: `building_id`, `plan_configuration`, `legal_ownership_status`, `count_families`, `has_secondary_use_police`, `has_secondary_use_gov_office`, `has_secondary_use_health_post`, `has_secondary_use_industry`, `has_secondary_use_institution`, `has_secondary_use_school`, and `has_secondary_use_other`. These columns were deemed non-contributive to the predictive task. After these changes, the dataset was reduced to 26 columns. A CSV file was generated at this stage for future use.
 
+- **Column Unification:** The `has_secondary_use` column was recalculated using related columns (`has_secondary_use_etc`) to address potential inconsistencies. The new unified column ensures centralized and reliable information.
+
+- **Column Elimination:** Based on insights from the EDA, the following columns were removed: `building_id`, `plan_configuration`, `legal_ownership_status`, `count_families`, `has_secondary_use_police`, `has_secondary_use_gov_office`, `has_secondary_use_health_post`, `has_secondary_use_industry`, `has_secondary_use_institution`, `has_secondary_use_school`, and `has_secondary_use_other`. These columns were deemed non-contributive to the predictive task. After these changes, the dataset was reduced to 26 columns.
 #### 2. Train-Test Split
 
 The dataset was split into training and testing subsets using a stratified approach. Stratification ensured that the distribution of the target variable remained consistent across both subsets, providing a robust basis for model evaluation. The `caret` library was used to implement this split, ensuring a clear and reproducible methodology.
 
 #### 3. One-Hot Encoding
 
-Categorical variables were transformed into a numerical format using one-hot encoding. This process involved creating binary columns for each category within variables like `land_surface_condition`, `foundation_type`, `roof_type`, `ground_floor_type`, `other_floor_type`, and `position`. This step significantly increased the number of columns, making the data compatible with machine learning algorithms.
+Categorical variables were transformed into a numerical format using one-hot encoding. This process involved creating binary columns for each category within variables like `land_surface_condition`, `foundation_type`, `roof_type`, `ground_floor_type`, `other_floor_type`, and `position`. This step significantly increased the number of columns, making the data compatible with machine learning algorithms. The one-hot encoded dataset was saved as `onehot` for future analysis.
 
 #### 4. Correlation Analysis
 
@@ -62,6 +63,25 @@ The preprocessing phase established a strong foundation for machine learning by 
 
 *Tasks: supervised analysis, unsupervised analysis, comparison of results, etc.* (3 points)
 
+### Supervised Analysis
+
+The supervised analysis involved training and evaluating multiple machine learning models to predict the damage grade of buildings after an earthquake. We used the preprocessed datasets (`onehot`, `filtered_onehot`, `pca`, `smote`, and `weighted`) to compare the performance of various algorithms and preprocessing techniques.
+
+Specifically, we decided to apply the following algorithms, available in the `caret` package:
+
+-   **Random Forest (RF):** A robust ensemble learning method that combines multiple decision trees to improve predictive accuracy and generalization. Random Forest is well-suited for classification tasks and can handle high-dimensional data effectively. In particular, we used the ranger implementation of Random Forest, which offers enhanced performance.
+
+-   **Gradient Boosting Machine (GBM):** An iterative ensemble method that builds decision trees sequentially, focusing on instances with higher prediction errors. GBM is known for its high predictive power and ability to capture complex relationships in the data.
+
+-   **Stochastic Gradient Boosting (SGB):** A variant of Gradient Boosting that introduces randomness into the algorithm, improving generalization and reducing overfitting. SGB is particularly effective for large datasets and high-dimensional feature spaces.
+
+It is important to note that we also applied hyperparameter tuning to optimize the models' performance. The `caret` package provided a convenient framework for tuning the algorithms and selecting the best hyperparameters through grid search and cross-validation. By tuning the models, we aimed to improve their predictive accuracy and generalization capabilities, ensuring robust performance on unseen data. As a result, we generated 15 different models from the combination of the three algorithms and five datasets.
+
+Another key aspect of the supervised analysis was evaluating the models' performance using appropriate metrics. We focused on the following evaluation metrics to assess the models' effectiveness:
+
+[...]
+
+
 ## Analysis II
 
 *Results: tables and/or figures presenting the obtained results* (1.5 points)
@@ -81,3 +101,7 @@ The preprocessing phase established a strong foundation for machine learning by 
 # Optional
 
 *Deep dive into topics or techniques not covered in class (e.g., filters, wrappers, etc.)* (3 points)
+
+## Kaiser Criterion
+
+The Kaiser criterion is a widely used method for determining the number of principal components to retain during PCA. It suggests retaining components with eigenvalues greater than 1, as these components explain more variance than a single original variable. By selecting components with eigenvalues above this threshold, we can capture the most significant information in the data while reducing dimensionality. The Kaiser criterion is a valuable tool for balancing the trade-off between complexity and information retention in PCA, ensuring that the transformed dataset remains informative and interpretable.
