@@ -138,8 +138,8 @@ get_AUC_and_plot <- function(original_data, predicted_data, output_plot_path) {
   predicted_data <- predicted_data[, c("damage_grade_pred", "probabilities.X1", "probabilities.X2", "probabilities.X3")]
   
   # Save the original and predicted data to CSV files
-  original_data_path <- tempfile(fileext = ".csv")
-  predicted_data_path <- tempfile(fileext = ".csv")
+  original_data_path <- normalizePath(tempfile(fileext = ".csv"), winslash = "/")
+  predicted_data_path <- normalizePath(tempfile(fileext = ".csv"), winslash = "/")
   
   write.csv(original_data, original_data_path, row.names = FALSE)
   write.csv(predicted_data, predicted_data_path, row.names = FALSE)
@@ -1082,3 +1082,31 @@ invisible(lapply(files, function(file) {
 
 ```
 
+# Probabilities normalization
+
+We need to normalize the probabilities so that they sum exactly 1. This is necessary to ensure that the probabilities are consistent and can be used to make decisions.
+
+```{r}
+normalize_probabilities <- function(file_path) {
+  df <- read.csv(file_path)
+  
+  # Select the columns of probabilities
+  cols_prob <- grep("probabilities\\.", names(df))
+  
+  # Normalize the probabilities so that they sum exactly 1
+  df[cols_prob] <- t(apply(df[cols_prob], 1, function(x) x / sum(x)))
+  
+  # Overwrite the original file
+  write.csv(df, file_path, row.names = FALSE)
+  
+  message("Probabilities normalized and saved to", file_path)
+}
+```
+
+We will normalize every prediction file.
+
+```{r}
+prediction_files <- list.files("../data/predictions", full.names = TRUE)
+
+invisible(lapply(prediction_files, normalize_probabilities))
+```
