@@ -209,9 +209,9 @@ The comparison of F1-Scores highlights that the `rf_onehot` model performs best 
 
 The AUC-ROC score provides insights into the models' ability to distinguish between classes, with higher scores indicating better performance. The table below presents the AUC-ROC scores for the selected models:
 
-| Metric | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
-|--------|-----------|-------------|-------------|--------------|---------|-----------|
-| AUC multiclass | 0.436 | 0.432 | 0.423 | 0.443 | 0.342 | 0.444 |
+| Metric         | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
+|----------------|-----------|-------------|-------------|--------------|---------|-----------|
+| AUC multiclass | 0.436 | 0.432 | 0.423 | 0.443 | 0.342 | **0.444** |
 
 The AUC-ROC scores show that the `gbm_smote` model performs best, with an AUC of 0.444, closely followed by `gbm_filtered` at 0.443. The `rf_onehot` model achieves an AUC of 0.436, indicating moderate performance in distinguishing between classes. The other models, such as `rf_filtered`, `rf_weighted`, and `gbm_pca`, exhibit similar AUC scores, ranging from 0.423 to 0.432. These results suggest that the models can differentiate between classes, with `gbm_smote` demonstrating the highest discriminatory power.
 

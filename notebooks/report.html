@@ -740,21 +740,21 @@ based on the metrics we have mentioned above: precision, recall, F1
 Score, and AUC for multi-class.</p>
 <div id="precision" class="section level4">
 <h4>Precision</h4>
-<p>Precision is a crucial metric for evaluating the models’ ability to
-correctly identify positive instances. It measures the proportion of
-true positive predictions among all instances predicted as positive. A
-higher precision score indicates fewer false positives, reflecting the
-model’s accuracy in classifying positive cases. The table below
-summarizes the precision scores for the selected models:</p>
+<p>Precision measures the proportion of instances predicted as belonging
+to a particular class that actually belong to that class. We have
+calculated the precision for each class and the average precision for
+the selected models. The table below summarizes the precision scores for
+the selected models, and marks the best score for each class in
+bold:</p>
 <table>
 <colgroup>
-<col width="8%" />
-<col width="14%" />
+<col width="10%" />
+<col width="13%" />
 <col width="16%" />
 <col width="16%" />
 <col width="17%" />
-<col width="11%" />
-<col width="14%" />
+<col width="12%" />
+<col width="13%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -769,46 +769,142 @@ summarizes the precision scores for the selected models:</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td>1</td>
-<td>0.652</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.582</td>
-<td>0.547</td>
-<td>0.547</td>
+<td><strong>1</strong></td>
+<td>0.655</td>
+<td><strong>0.664</strong></td>
+<td>0.503</td>
+<td>0.617</td>
+<td>0.000</td>
+<td>0.574</td>
 </tr>
 <tr class="even">
-<td>2</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.547</td>
+<td><strong>2</strong></td>
+<td>0.554</td>
+<td>0.548</td>
+<td><strong>0.567</strong></td>
+<td>0.549</td>
+<td>0.518</td>
+<td>0.551</td>
 </tr>
 <tr class="odd">
-<td>3</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.547</td>
+<td><strong>3</strong></td>
+<td>0.492</td>
+<td><strong>0.568</strong></td>
+<td>0.434</td>
+<td>0.453</td>
+<td>0.070</td>
+<td>0.454</td>
 </tr>
 <tr class="even">
-<td>Total</td>
-<td>0.582</td>
-<td>0.547</td>
-<td>0.547</td>
-<td>0.563</td>
-<td>0.547</td>
-<td>0.547</td>
+<td><strong>Avg</strong></td>
+<td>0.568</td>
+<td><strong>0.594</strong></td>
+<td>0.501</td>
+<td>0.540</td>
+<td>0.197</td>
+<td>0.526</td>
 </tr>
 </tbody>
 </table>
+<p>As we can see, the <code>rf_filtered</code> model performs best
+overall, achieving the highest average precision of 0.594. It shows
+strong performance across all three classes, particularly for class 1
+(0.664) and class 3 (0.568), indicating that it effectively minimizes
+false positives in these categories. The <code>rf_onehot</code> model
+follows closely with an average precision of 0.568, also demonstrating
+consistent but slightly weaker performance. On the other hand, the
+<code>gbm_pca</code> model struggles significantly, with a precision of
+0 for class 1 and only 0.070 for class 3, resulting in a very low
+average precision of 0.197. This suggests that <code>gbm_pca</code>
+fails to make reliable predictions for certain classes, which means it
+may not be suitable for this earthquake damage prediction task. Other
+models like <code>rf_weighted</code>, <code>gbm_filtered</code>, and
+<code>gbm_smote</code> achieve average results, but they do not stand
+out in terms of precision.</p>
 </div>
 <div id="recall" class="section level4">
 <h4>Recall</h4>
+<p>Recall measures the proportion of instances of a particular class
+that are correctly identified by the model. We have calculated the
+recall for each class and the average recall for the selected models.
+The table below summarizes the recall scores for the selected models,
+and marks the best score for each class in bold:</p>
+<table>
+<colgroup>
+<col width="10%" />
+<col width="13%" />
+<col width="16%" />
+<col width="16%" />
+<col width="17%" />
+<col width="12%" />
+<col width="13%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Class</th>
+<th>rf_onehot</th>
+<th>rf_filtered</th>
+<th>rf_weighted</th>
+<th>gbm_filtered</th>
+<th>gbm_pca</th>
+<th>gbm_smote</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>1</strong></td>
+<td>0.548</td>
+<td>0.526</td>
+<td><strong>0.719</strong></td>
+<td>0.526</td>
+<td>0.000</td>
+<td>0.519</td>
+</tr>
+<tr class="even">
+<td><strong>2</strong></td>
+<td>0.760</td>
+<td>0.879</td>
+<td>0.295</td>
+<td>0.671</td>
+<td><strong>0.884</strong></td>
+<td>0.584</td>
+</tr>
+<tr class="odd">
+<td><strong>3</strong></td>
+<td>0.250</td>
+<td>0.096</td>
+<td><strong>0.662</strong></td>
+<td>0.331</td>
+<td>0.019</td>
+<td>0.435</td>
+</tr>
+<tr class="even">
+<td><strong>Avg</strong></td>
+<td>0.519</td>
+<td>0.500</td>
+<td><strong>0.558</strong></td>
+<td>0.509</td>
+<td>0.301</td>
+<td>0.513</td>
+</tr>
+</tbody>
+</table>
+<p>As we can infer from the table, <code>rf_weighted</code> model stands
+out with the highest average recall of 0.558. This indicates its strong
+ability to correctly identify instances across all classes, particularly
+for class 1 (0.719) and class 3 (0.662). However, it underperforms for
+class 2, where its recall is only 0.295, showing some inconsistency in
+recovering instances of this class. Meanwhile, <code>gbm_pca</code>,
+despite its poor precision, achieves the highest recall for class 2
+(0.884), suggesting it is effective at capturing most true instances of
+this class but fails to generalize well to others, as evidenced by its
+near-zero recall for class 1. The <code>rf_filtered</code> model,
+although strong in precision, lags in recall with an average score of
+0.500, particularly struggling with class 3 (0.096), where it fails to
+capture a significant proportion of true instances. Other models like
+<code>rf_onehot</code>, <code>gbm_filtered</code>, and
+<code>gbm_smote</code> achieve average scores, with no standout
+performance in terms of recall.</p>
 </div>
 <div id="f1-score" class="section level4">
 <h4>F1 Score</h4>
@@ -898,15 +994,15 @@ class.</p>
 distinguish between classes, with higher scores indicating better
 performance. The table below presents the AUC-ROC scores for the
 selected models:</p>
-<table style="width:100%;">
+<table>
 <colgroup>
+<col width="18%" />
+<col width="12%" />
+<col width="14%" />
+<col width="14%" />
+<col width="16%" />
 <col width="10%" />
-<col width="13%" />
-<col width="16%" />
-<col width="16%" />
-<col width="17%" />
-<col width="11%" />
-<col width="13%" />
+<col width="12%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -927,7 +1023,7 @@ selected models:</p>
 <td>0.423</td>
 <td>0.443</td>
 <td>0.342</td>
-<td>0.444</td>
+<td><strong>0.444</strong></td>
 </tr>
 </tbody>
 </table>
@@ -951,6 +1047,13 @@ discriminatory power.</p>
 <b>Figure 1:</b> AUC-ROC Curve for the <code>gbm_smote</code> model.
 </center>
 </div>
+<p>As shown in Figure 1, while the AUC is relatively close to 0.5, it
+suggests that our model has some discriminatory power, but it is not
+highly effective at separating the classes. The MCP curve rises steadily
+without sharp increases, indicating that our model’s predictions are
+only moderately better than random guessing. This AUC score reflects the
+performance of the <code>gbm_smote</code> model as one of the best among
+the models we evaluated, though there is still room for improvement.</p>
 </div>
 </div>
 </div>
