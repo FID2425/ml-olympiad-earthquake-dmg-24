@@ -241,6 +241,20 @@ As shown in Figure 1, while the AUC is relatively close to 0.5, it suggests that
 
 The Kaiser criterion is a widely used method for determining the number of principal components to retain during PCA. It suggests retaining components with eigenvalues greater than 1, as these components explain more variance than a single original variable. By selecting components with eigenvalues above this threshold, we can capture the most significant information in the data while reducing dimensionality. The Kaiser criterion is a valuable tool for balancing the trade-off between complexity and information retention in PCA, ensuring that the transformed dataset remains informative and interpretable.
 
+## SMOTE
+
+SMOTE (Synthetic Minority Oversampling Technique) is a powerful method for addressing class imbalance in machine learning datasets, which generates synthetic samples by interpolating between a minority class sample and its nearest neighbors. This technique enhances the representation of underrepresented classes, enabling models to learn effectively from all classes.
+
+Mathematically, SMOTE selects a minority class sample `x` and one of its k-nearest neighbors `x_neighbor`, identified using a distance metric like Euclidean distance. It then creates a synthetic point `x_synthetic` using the formula:
+
+`x_synthetic = x + lambda * (x_neighbor - x)`
+
+Here, `lambda` is a random number between 0 and 1, ensuring the new sample lies randomly along the line connecting `x` and `x_neighbor`. This approach increases the density of the minority class in feature space, providing a more nuanced representation compared to simple duplication.
+
+SMOTE is particularly useful for classification tasks where one class is significantly smaller than the others, as it helps prevent bias and improves the model's ability to generalize to unseen data. While effective, SMOTE should be used carefully, as oversampling can introduce noise and affect the model's performance, or even lead to overfitting.
+
+By incorporating SMOTE into the preprocessing pipeline, we can create a more balanced dataset that leads to better model performance and robust predictions.
+
 # Bibliography
 
 *References to the data and, if relevant, additional sources* (0.5 points)
