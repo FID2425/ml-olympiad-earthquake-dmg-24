@@ -35,6 +35,9 @@ library(caret)
 library(pROC)
 library(ggplot2)
 library(xgboost)
+library(reticulate)
+# use_condaenv("arm64_py39", required = TRUE) # For MacOS M1
+py_config()
 ```
 
 The following function will be used to apply the classification algorithms to the datasets. It will train the model, save it, predict the test data, save the predictions, and return the trained model.
@@ -126,21 +129,38 @@ The ROC curve is a graphical plot that illustrates the diagnostic ability of a b
 The AUC is the area under the ROC curve. AUC provides an aggregate measure of performance across all possible classification thresholds.
 
 ```{r}
-get_AUC_multiclass <- function(original_data, predicted_data) {
-  # Convert the 'damage_grade' column to a factor
-  original_data$damage_grade <- factor(original_data$damage_grade, levels = c("1", "2", "3"))
+get_AUC_and_plot <- function(original_data, predicted_data, output_plot_path) {
   
-  # Convert the 'damage_grade_pred' column to a factor
-  predicted_data$damage_grade_pred <- factor(predicted_data$damage_grade_pred, levels = c("X1", "X2", "X3"), labels = c("1", "2", "3"))
+  plot_loc <- "../results/supervised/plots/"
+  output_plot_path_complete <- paste0(plot_loc, output_plot_path)
   
-  # Create the ROC curve
-  multiclass_roc <- multiclass.roc(as.numeric(predicted_data$damage_grade_pred), as.numeric(original_data$damage_grade))
   
-  # Print the AUC
-  print(paste("AUC :", round(multiclass_roc$auc, 4)))
+  predicted_data <- predicted_data[, c("damage_grade_pred", "probabilities.X1", "probabilities.X2", "probabilities.X3")]
+  
+  # Save the original and predicted data to CSV files
+  original_data_path <- normalizePath(tempfile(fileext = ".csv"), winslash = "/")
+  predicted_data_path <- normalizePath(tempfile(fileext = ".csv"), winslash = "/")
+  
+  write.csv(original_data, original_data_path, row.names = FALSE)
+  write.csv(predicted_data, predicted_data_path, row.names = FALSE)
+  
+  python_script_path <- "../scripts/auc.py"
+  
+  # Run the Python script using reticulate
+  py_run_string(paste0(
+    "import sys; sys.argv = ['",
+    python_script_path, "', '",
+    original_data_path, "', '",
+    predicted_data_path, "', '",
+    output_plot_path_complete, "']"
+  ))
+  py_run_file(python_script_path)
+  
+  # Read the AUC from the output file
+  area <- py$area
   
   # Return the AUC
-  return(multiclass_roc)
+  list(auc = area, plot_path = output_plot_path)
 }
 ```
 
@@ -196,7 +216,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-rf_onehot_auc <- get_AUC_multiclass(onehot_test, rf_onehot_predictions)
+rf_onehot_auc <- get_AUC_and_plot(onehot_test, rf_onehot_predictions, "rf_onehot_auc.png")
 ```
 
 ### Gradient Boosting Machines
@@ -249,7 +269,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-gbm_onehot_auc <- get_AUC_multiclass(onehot_test, gbm_onehot_predictions)
+gbm_onehot_auc <- get_AUC_and_plot(onehot_test, gbm_onehot_predictions, "gbm_onehot_auc.png")
 ```
 
 ### Stochastic Gradient Boosting
@@ -296,7 +316,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-sgb_onehot_auc <- get_AUC_multiclass(onehot_test, sgb_onehot_predictions)
+sgb_onehot_auc <- get_AUC_and_plot(onehot_test, sgb_onehot_predictions, "sgb_onehot_auc.png")
 ```
 
 ## Filtered Onehot Dataset
@@ -350,7 +370,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-rf_filtered_auc <- get_AUC_multiclass(filtered_onehot_test, rf_filtered_onehot_predictions)
+rf_filtered_auc <- get_AUC_and_plot(filtered_onehot_test, rf_filtered_onehot_predictions, "rf_filtered_auc.png")
 ```
 
 ### Gradient Boosting Machines
@@ -403,7 +423,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-gbm_filtered_auc <- get_AUC_multiclass(filtered_onehot_test, gbm_filtered_predictions)
+gbm_filtered_auc <- get_AUC_and_plot(filtered_onehot_test, gbm_filtered_predictions, "gbm_filtered_auc.png")
 ```
 
 ### Stochastic Gradient Boosting
@@ -450,7 +470,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-sgb_filtered_auc <- get_AUC_multiclass(filtered_onehot_test, sgb_filtered_onehot_predictions)
+sgb_filtered_auc <- get_AUC_and_plot(filtered_onehot_test, sgb_filtered_onehot_predictions, "sgb_filtered_auc.png")
 ```
 
 ## PCA Dataset
@@ -497,7 +517,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-rf_pca_auc <- get_AUC_multiclass(pca_test, rf_pca_predictions)
+rf_pca_auc <- get_AUC_and_plot(pca_test, rf_pca_predictions, "rf_pca_auc.png")
 ```
 
 ### Gradient Boosting Machines
@@ -538,7 +558,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-gbm_pca_auc <- get_AUC_multiclass(pca_test, gbm_pca_predictions)
+gbm_pca_auc <- get_AUC_and_plot(pca_test, gbm_pca_predictions, "gbm_pca_auc.png")
 ```
 
 ### Stochastic Gradient Boosting
@@ -576,7 +596,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-sgb_pca_auc <- get_AUC_multiclass(pca_test, sgb_pca_predictions)
+sgb_pca_auc <- get_AUC_and_plot(pca_test, sgb_pca_predictions, "sgb_pca_auc.png")
 ```
  
 ## SMOTE Dataset
@@ -623,7 +643,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-rf_smote_auc <- get_AUC_multiclass(smote_test, rf_smote_predictions)
+rf_smote_auc <- get_AUC_and_plot(smote_test, rf_smote_predictions, "rf_smote_auc.png")
 ```
 
 ### Gradient Boosting Machines
@@ -664,7 +684,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-gbm_smote_auc <- get_AUC_multiclass(smote_test, gbm_smote_predictions)
+gbm_smote_auc <- get_AUC_and_plot(smote_test, gbm_smote_predictions, "gbm_smote_auc.png")
 ```
 
 ### Stochastic Gradient Boosting
@@ -702,7 +722,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-sgb_smote_auc <- get_AUC_multiclass(smote_test, sgb_smote_predictions)
+sgb_smote_auc <- get_AUC_and_plot(smote_test, sgb_smote_predictions, "sgb_smote_auc.png")
 ```
 
 ## Weighted Dataset
@@ -756,7 +776,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-rf_weighted_auc <- get_AUC_multiclass(weighted_test, rf_weighted_predictions)
+rf_weighted_auc <- get_AUC_and_plot(weighted_test, rf_weighted_predictions, "rf_weighted_auc.png")
 ```
 
 ### Gradient Boosting Machines
@@ -809,7 +829,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-gbm_weighted_auc <- get_AUC_multiclass(weighted_test, gbm_weighted_predictions)
+gbm_weighted_auc <- get_AUC_and_plot(weighted_test, gbm_weighted_predictions, "gbm_weighted_auc.png")
 ```
 
 ### Stochastic Gradient Boosting
@@ -856,7 +876,7 @@ Finally, we can calculate the AUC.
 
 ```{r}
 # Get the AUC
-sgb_weighted_auc <- get_AUC_multiclass(weighted_test, sgb_weighted_predictions)
+sgb_weighted_auc <- get_AUC_and_plot(weighted_test, sgb_weighted_predictions, "sgb_weighted_auc.png")
 ```
 
 
@@ -1062,3 +1082,31 @@ invisible(lapply(files, function(file) {
 
 ```
 
+# Probabilities normalization
+
+We need to normalize the probabilities so that they sum exactly 1. This is necessary to ensure that the probabilities are consistent and can be used to make decisions.
+
+```{r}
+normalize_probabilities <- function(file_path) {
+  df <- read.csv(file_path)
+  
+  # Select the columns of probabilities
+  cols_prob <- grep("probabilities\\.", names(df))
+  
+  # Normalize the probabilities so that they sum exactly 1
+  df[cols_prob] <- t(apply(df[cols_prob], 1, function(x) x / sum(x)))
+  
+  # Overwrite the original file
+  write.csv(df, file_path, row.names = FALSE)
+  
+  message("Probabilities normalized and saved to", file_path)
+}
+```
+
+We will normalize every prediction file.
+
+```{r}
+prediction_files <- list.files("../data/predictions", full.names = TRUE)
+
+invisible(lapply(prediction_files, normalize_probabilities))
+```

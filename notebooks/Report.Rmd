@@ -8,6 +8,8 @@ csl: apa.csl
 
 *Should be brief and explanatory* (0.25 points)
 
+Why do buildings collapse? A predictive and descriptive analysis of earthquake damage
+
 # Summary
 
 *A paragraph summarizing the presented content* (0.5 points)
@@ -21,6 +23,62 @@ csl: apa.csl
 ## Data
 
 *Initial exploration of the data to understand the problem: preprocessing and visualization*
+
+### Exploratory Analysis
+
+The exploratory data analysis (EDA) phase was crucial for understanding the dataset, identifying patterns, and gaining insights into the predictive task. This phase involved examining the dataset's structure, distribution, and relationships between variables to inform subsequent preprocessing and modeling steps. The EDA process was divided into several key components:
+
+#### 1. Data Overview
+
+After loading the dataset, we conducted a preliminary examination to understand its structure and contents. The dataset consisted of 36 columns and 4000 rows, with each row representing a building's characteristics and damage grade. The target variable, `damage_grade`, was categorical and represented the severity of damage caused by an earthquake with an integer value in the range `[1,3]`. The dataset also contained several categorical and numerical features, each providing potentially valuable information for the predictive task.
+
+#### 2. Data Consistency
+
+Next step was to check the consistency of the data. We tried first to identify missing values and potential inconsistencies that could affect the quality of the predictive model. The dataset was found to be relatively clean, with no missing values in the columns.
+
+#### 3. Data visualization
+
+To gain deeper insights into the data, we decided to visualize the distribution of values for the different attributes available, as some of then, in particular the categorical were hard to interpret as their values were mostly given by single character. Such was the case of columns `position` or `surface_condition`.
+
+We started by analyzing two features which represented percentages: `height_percentage` and `area_percentage`. These two appeared to be already normalized, as their values were in the range `[0,1]`. The distribution of these two features was visualized using boxplots, which showed that the majority of buildings had a height percentage of around 0.2 and an area of around 0.1. In terms of height there weren't many outliers, but in terms of area there were many buildings with values higher to that of the majority. However we decided to let those values as they were because it would make sense that in a city there would be buildings with a larger area than others. We did however infer that since the height of the buildings was mostly the same, that would mean that most buildings were either houses or small buildings.
+
+Next we analyzed the other numerical features, which were `age`, `count_floors_pre_eq`, `count_families`. And as we suspected, most buildings were residential houses, as the majority, with a familiy or two at most, rarely more that that. We also found that most buildings were registered as being 0 years since construction, and there was also a spike at 30 years since construction, which could mean that wither there was a boom in construction 30 years ago, or that the data was not properly recorded.
+
+When it comes to the categorical features, we found that there was a lot of redundant data, for example, `plan_configuration` or `legal_ownership_status` had a value distribution that was mostly the same, with one value being the majority, and the set of `secondary_use_X` also had a low value distribution, with most not having any secondary use, which does fit with our hypothesis of most buildings being residential houses. On the same line of categorical features we tried to extract any realtion or meaning behind `surface_condition` and `position`, but we couldn't find any, as the values were mostly single characters and thus not very explanatory and there did not seem to be much correlation at first sight.
+
+#### 4. Data Correlation
+
+We also conducted a linear correlation analysis to identify relationships between numerical features and the target variable, `damage_grade`, and found the following features presented the highest correlation values:
+-   `age` (0.269): We can infer that the age of the building is a significant factor in the damage grade, which is expected as older buildings are more likely to be damaged.
+-   `area_percentage` (-0.325): Larger area percentages are correlated with lower damage grades, which could mean that larger buildings might experience less relative damage.
+-   `roof_type` (-0.324): We can infer that the roof type is a significant factor in the damage grade, which is expected as some roof types are more resistant to earthquakes.
+-   `has_superstructure_mud_mortar_stone` (0.393), `has_superstructure_cement_mortar_brick` (-0.415), `has_superstructure_rc_non_engineered` (-0.221) and `has_superstructure_rc_engineered` (-0.259): We can infer that the superstructure material is a significant factor in the damage grade, which is expected as some materials are more resistant to earthquakes.
+
+#### 5. Further Analysis
+
+Before taking any conclusions on the state of the data, we decided to carry out an analysis using the `DataExplorer` library, which report can be found alongside this document. The report did not shed light on anything that we hadn't already seen, but it served to reassure that the exploratory analysis we had done was correct. Overall the data seemed to be quite consistent and clean, although containing close to no variation in some columns, which could be a problem for the predictive model. And within some of those columns we decided some were best to be removed or processed in an specific way to reduce data complexity and potentially improve the model.
+
+#### 6. Proposed Preprocessing
+
+After conducting the exploratory analysis, we proposed the following:
+
+- Considering one hot encoding for the categorical features.
+- Applying techniques to deal with the imbalanced data on the target class `damage_grade`.
+- Removing seemingly redundant columns to reduce dimensionality and noise in the data.
+- Potentially combining the `has_secondary_use` columns into a single column to simplify the data.
+
+When it comes to removing columns, we propose a few that could removed if needed to reduce dimensionality or noise in the data, as we believe it wouldn't affect much the results. Taking in mind of course that building preliminary models to confirm this would be beneficial still:
+- `building_id`
+- `plan_configuration`
+- `legal_ownership_status`
+- `count_families`
+- `has_secondary_use_use_police`
+- `has_secondary_use_gov_office`
+- `has_secondary_use_health_post`
+- `has_secondary_use_industry`
+- `has_secondary_use_institution`
+- `has_secondary_use_school`
+- `has_secondary_use_other`
 
 ### Preprocessing
 
@@ -144,6 +202,14 @@ The AUC-ROC score provides insights into the models' ability to distinguish betw
 
 The AUC-ROC scores show that the `gbm_smote` model performs best, with an AUC of 0.444, closely followed by `gbm_filtered` at 0.443. The `rf_onehot` model achieves an AUC of 0.436, indicating moderate performance in distinguishing between classes. The other models, such as `rf_filtered`, `rf_weighted`, and `gbm_pca`, exhibit similar AUC scores, ranging from 0.423 to 0.432. These results suggest that the models can differentiate between classes, with `gbm_smote` demonstrating the highest discriminatory power.
 
+<div> <center> 
+![](../results/supervised/plots/gbm_smote_auc.png)
+</center> </div>
+<div> <center>
+<b>Figure 1:</b> AUC-ROC Curve for the `gbm_smote` model. 
+</center> </div>
+
+As shown in Figure 1, while the AUC is relatively close to 0.5, it suggests that our model has some discriminatory power, but it is not highly effective at separating the classes. The MCP curve rises steadily without sharp increases, indicating that our model's predictions are only moderately better than random guessing. This AUC score reflects the performance of the `gbm_smote` model as one of the best among the models we evaluated, though there is still room for improvement.
 
 
 ## Discussion
