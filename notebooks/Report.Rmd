@@ -76,12 +76,11 @@ Specifically, we decided to apply the following algorithms, available in the `ca
 
 It is important to note that we also applied hyperparameter tuning to optimize the models' performance. The `caret` package provided a convenient framework for tuning the algorithms and selecting the best hyperparameters through grid search and cross-validation. By tuning the models, we aimed to improve their predictive accuracy and generalization capabilities, ensuring robust performance on unseen data. As a result, we generated 15 different models from the combination of the three algorithms and five datasets.
 
-Another key aspect of the supervised analysis was evaluating the models' performance using appropriate metrics. We focused on the following evaluation metrics to assess the models' effectiveness: 
+Another key aspect of the supervised analysis was evaluating the models' performance using appropriate metrics. We focused on the following evaluation metrics to assess the models' effectiveness:
 
-- **Confusion Matrix:** As the target variable is categorical, we have focused on using this matrix and its metrics as it provides a lot of information about the model. In addition, we decided to use the extended version (`mode = "everything"`) that provides additional information such as the F1-Score, which is useful to us as it is the evaluation metric used in the ml-olympiad. 
+-   **Confusion Matrix:** As the target variable is categorical, we have focused on using this matrix and its metrics as it provides a lot of information about the model. In addition, we decided to use the extended version (`mode = "everything"`) that provides additional information such as the F1-Score, which is useful to us as it is the evaluation metric used in the ml-olympiad.
 
-- **Area Under the Curve (AUC):** This metric is particularly useful for binary classification problems, providing insights into the model's ability to distinguish between classes. A higher AUC-ROC score indicates better performance, with a value of 0.5 representing random guessing and 1 representing perfect classification. In our case, we saw that R allowed the use of a multi-class auc function and initially used it. However, after the follow-up class, we read the paper [@hand2001simple] in which the implementation is discussed and discovered that in 50% of the cases, the results provided are incorrect. Therefore, following the professor's recommendation, we made use of the Python library defined in
-*Classification performance assessment for imbalanced multiclass data* [@aguilar2024classification], as it obtained really good results compared to the previous one, and we implemented a python wrapper in R using the `reticulate` library to use this python library (`imcp`). 
+-   **Area Under the Curve (AUC):** This metric is particularly useful for binary classification problems, providing insights into the model's ability to distinguish between classes. A higher AUC-ROC score indicates better performance, with a value of 0.5 representing random guessing and 1 representing perfect classification. In our case, we saw that R allowed the use of a multi-class auc function and initially used it. However, after the follow-up class, we read the paper [@hand2001simple] in which the implementation is discussed and discovered that in 50% of the cases, the results provided are incorrect. Therefore, following the professor's recommendation, we made use of the Python library defined in *Classification performance assessment for imbalanced multiclass data* [@aguilar2024classification], as it obtained really good results compared to the previous one, and we implemented a python wrapper in R using the `reticulate` library to use this python library (`imcp`).
 
 #### Implementation
 
@@ -91,13 +90,13 @@ To reduce the code duplication and improve the readability of the supervised tra
 
 Since we obtained 15 models as a result of the training, we have decided to choose 6 in order to comment on the most interesting results. In choosing these models, we have relied on the models with the best precision, recall, F1-Score and AUC; resulting in:
 
-- **Best precision**: `rf_filtered` and `rf_weighted`
+-   **Best precision**: `rf_filtered` and `rf_weighted`
 
-- **Best recall**: `rf_weighted` and `gbm_pca`
+-   **Best recall**: `rf_weighted` and `gbm_pca`
 
-- **Best f1 (mean)**: `rf_onehot` and `gbm_smote`
+-   **Best f1 (mean)**: `rf_onehot` and `gbm_smote`
 
-- **Best AUC**: `gbm_filtered` and `gbm_smote`
+-   **Best AUC**: `gbm_filtered` and `gbm_smote`
 
 In the section [supervised analysis results](#supervised-analysis-2) we will analyse the results provided by the rf_onehot, rf_filtered, rf_weigthed, gbm_filtered, gbm_pca and gbm_smote models.
 
@@ -109,7 +108,7 @@ In the section [supervised analysis results](#supervised-analysis-2) we will ana
 
 In this section, we present the results of the supervised analysis, focusing on the performance of the machine learning models across different datasets and algorithms. We will present the six best models based on the metrics we have mentioned above: precision, recall, F1 Score, and AUC for multi-class.
 
-#### Precision 
+#### Precision
 
 Precision is a crucial metric for evaluating the models' ability to correctly identify positive instances. It measures the proportion of true positive predictions among all instances predicted as positive. A higher precision score indicates fewer false positives, reflecting the model's accuracy in classifying positive cases. The table below summarizes the precision scores for the selected models:
 
@@ -124,7 +123,27 @@ Precision is a crucial metric for evaluating the models' ability to correctly id
 
 #### F1 Score
 
+A higher F1-Score reflects a better balance between precision and recall, crucial for minimizing false positives and false negatives in critical applications. In the table below, we present the F1 scores of the selected models and the best performing model for each class marked in bold:
+
+| Class   | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| **1**   | **0.597** | 0.587       | 0.591       | 0.568        | NA      | 0.545     |
+| **2**   | 0.641     | **0.675**   | 0.387       | 0.603        | 0.653   | 0.567     |
+| **3**   | 0.332     | 0.164       | **0.423**   | 0.382        | 0.030   | 0.444     |
+| **Avg** | **0.523** | 0.475       | 0.501       | 0.518        | 0.341   | 0.519     |
+
+The comparison of F1-Scores highlights that the `rf_onehot` model performs best overall, achieving the highest average score of 0.523 and excelling in `Class 1`, though its performance for `Class 3` (0.332) is relatively weaker due to the fact that as we have seen in general terms `Class 3` is the most difficult to distinguish from `Class 2`. The `rf_filtered` model outperforms others for `Class 2` with an F1-Score of 0.675, while `rf_weighted` is most effective for `Class 3` at 0.423, showing the need to take into account the distribution of the classes of the dataset. On the other hand, models like `gbm_pca` struggle, with NA for `Class 1` due to zero precision and recall, indicating a complete failure to detect that class.
+
 #### AUC
+
+The AUC-ROC score provides insights into the models' ability to distinguish between classes, with higher scores indicating better performance. The table below presents the AUC-ROC scores for the selected models:
+
+| Metric | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
+|--------|-----------|-------------|-------------|--------------|---------|-----------|
+| AUC multiclass | 0.436 | 0.432 | 0.423 | 0.443 | 0.342 | 0.444 |
+
+The AUC-ROC scores show that the `gbm_smote` model performs best, with an AUC of 0.444, closely followed by `gbm_filtered` at 0.443. The `rf_onehot` model achieves an AUC of 0.436, indicating moderate performance in distinguishing between classes. The other models, such as `rf_filtered`, `rf_weighted`, and `gbm_pca`, exhibit similar AUC scores, ranging from 0.423 to 0.432. These results suggest that the models can differentiate between classes, with `gbm_smote` demonstrating the highest discriminatory power.
+
 
 
 ## Discussion
@@ -135,7 +154,7 @@ Precision is a crucial metric for evaluating the models' ability to correctly id
 
 *A brief paragraph that "dialogues" with the initial summary* (0.5 points)
 
-# Optional
+# Outstanding tasks
 
 *Deep dive into topics or techniques not covered in class (e.g., filters, wrappers, etc.)* (3 points)
 
@@ -144,4 +163,5 @@ Precision is a crucial metric for evaluating the models' ability to correctly id
 The Kaiser criterion is a widely used method for determining the number of principal components to retain during PCA. It suggests retaining components with eigenvalues greater than 1, as these components explain more variance than a single original variable. By selecting components with eigenvalues above this threshold, we can capture the most significant information in the data while reducing dimensionality. The Kaiser criterion is a valuable tool for balancing the trade-off between complexity and information retention in PCA, ensuring that the transformed dataset remains informative and interpretable.
 
 # Bibliography
+
 *References to the data and, if relevant, additional sources* (0.5 points)
