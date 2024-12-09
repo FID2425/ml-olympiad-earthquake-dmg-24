@@ -166,18 +166,31 @@ In the section [supervised analysis results](#supervised-analysis-2) we will ana
 
 In this section, we present the results of the supervised analysis, focusing on the performance of the machine learning models across different datasets and algorithms. We will present the six best models based on the metrics we have mentioned above: precision, recall, F1 Score, and AUC for multi-class.
 
-#### Precision
+#### Precision 
 
-Precision is a crucial metric for evaluating the models' ability to correctly identify positive instances. It measures the proportion of true positive predictions among all instances predicted as positive. A higher precision score indicates fewer false positives, reflecting the model's accuracy in classifying positive cases. The table below summarizes the precision scores for the selected models:
+Precision measures the proportion of instances predicted as belonging to a particular class that actually belong to that class. We have calculated the precision for each class and the average precision for the selected models. The table below summarizes the precision scores for the selected models, and marks the best score for each class in bold:
 
-| Class | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
-|-------|-----------|-------------|-------------|--------------|---------|-----------|
-| 1     | 0.652     | 0.547       | 0.547       | 0.582        | 0.547   | 0.547     |
-| 2     | 0.547     | 0.547       | 0.547       | 0.547        | 0.547   | 0.547     |
-| 3     | 0.547     | 0.547       | 0.547       | 0.547        | 0.547   | 0.547     |
-| Total | 0.582     | 0.547       | 0.547       | 0.563        | 0.547   | 0.547     |
+| Class  | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca  | gbm_smote |
+|--------|-----------|-------------|-------------|--------------|----------|-----------|
+| **1**  | 0.655     | **0.664**   | 0.503       | 0.617        | 0.000    | 0.574     |
+| **2**  | 0.554     | 0.548       | **0.567**   | 0.549        | 0.518    | 0.551     |
+| **3**  | 0.492     | **0.568**   | 0.434       | 0.453        | 0.070    | 0.454     |
+| **Avg**| 0.568     | **0.594**   | 0.501       | 0.540        | 0.197    | 0.526     |
+
+As we can see, the `rf_filtered` model performs best overall, achieving the highest average precision of 0.594. It shows strong performance across all three classes, particularly for class 1 (0.664) and class 3 (0.568), indicating that it effectively minimizes false positives in these categories. The `rf_onehot` model follows closely with an average precision of 0.568, also demonstrating consistent but slightly weaker performance. On the other hand, the `gbm_pca` model struggles significantly, with a precision of 0 for class 1 and only 0.070 for class 3, resulting in a very low average precision of 0.197. This suggests that `gbm_pca` fails to make reliable predictions for certain classes, which means it may not be suitable for this earthquake damage prediction task. Other models like `rf_weighted`, `gbm_filtered`, and `gbm_smote` achieve average results, but they do not stand out in terms of precision.
 
 #### Recall
+
+Recall measures the proportion of instances of a particular class that are correctly identified by the model. We have calculated the recall for each class and the average recall for the selected models. The table below summarizes the recall scores for the selected models, and marks the best score for each class in bold:
+
+| Class  | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca  | gbm_smote |
+|--------|-----------|-------------|-------------|--------------|----------|-----------|
+| **1**  | 0.548     | 0.526       | **0.719**   | 0.526        | 0.000    | 0.519     |
+| **2**  | 0.760     | 0.879       | 0.295       | 0.671        | **0.884**| 0.584     |
+| **3**  | 0.250     | 0.096       | **0.662**   | 0.331        | 0.019    | 0.435     |
+| **Avg**| 0.519     | 0.500       | **0.558**   | 0.509        | 0.301    | 0.513     |
+
+As we can infer from the table, `rf_weighted` model stands out with the highest average recall of 0.558. This indicates its strong ability to correctly identify instances across all classes, particularly for class 1 (0.719) and class 3 (0.662). However, it underperforms for class 2, where its recall is only 0.295, showing some inconsistency in recovering instances of this class. Meanwhile, `gbm_pca`, despite its poor precision, achieves the highest recall for class 2 (0.884), suggesting it is effective at capturing most true instances of this class but fails to generalize well to others, as evidenced by its near-zero recall for class 1. The `rf_filtered` model, although strong in precision, lags in recall with an average score of 0.500, particularly struggling with class 3 (0.096), where it fails to capture a significant proportion of true instances. Other models like `rf_onehot`, `gbm_filtered`, and `gbm_smote` achieve average scores, with no standout performance in terms of recall.
 
 #### F1 Score
 
