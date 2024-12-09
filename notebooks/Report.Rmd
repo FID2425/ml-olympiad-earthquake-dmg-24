@@ -109,17 +109,23 @@ In the section [supervised analysis results](#supervised-analysis-2) we will ana
 
 In this section, we present the results of the supervised analysis, focusing on the performance of the machine learning models across different datasets and algorithms. We will present the six best models based on the metrics we have mentioned above: precision, recall, F1 Score, and AUC for multi-class.
 
-#### rf_onehot model
+#### Precision 
 
-We have selected the rf_onehot model as one of the top-performing models as it has achived the highest F1 Score between all models, with a value of 0.523. The precision and recall values for this model are 0.567 and 0.519, respectively. The AUC for multi-class is 0.436.
+Precision is a crucial metric for evaluating the models' ability to correctly identify positive instances. It measures the proportion of true positive predictions among all instances predicted as positive. A higher precision score indicates fewer false positives, reflecting the model's accuracy in classifying positive cases. The table below summarizes the precision scores for the selected models:
 
-#### rf_filtered model
+| Class | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
+|-------|-----------|-------------|-------------|--------------|---------|-----------|
+| 1     | 0.652     | 0.547       | 0.547       | 0.582        | 0.547   | 0.547     |
+| 2     | 0.547     | 0.547       | 0.547       | 0.547        | 0.547   | 0.547     |
+| 3     | 0.547     | 0.547       | 0.547       | 0.547        | 0.547   | 0.547     |
+| Total | 0.582     | 0.547       | 0.547       | 0.563        | 0.547   | 0.547     |
 
-The reason for selecting the rf_filtered model as one of the top-performing models is that it has been the model with the highest precision classifying the classes 1 and 3, with values of 0.664 and 0.568. Its overall precision is 0.593 and the recall is 0.5. The F1 Score for this model is 0.475, and the AUC for multi-class is 0.432.
+#### Recall
 
-#### rf_weighted model
+#### F1 Score
 
-We have chosen the rf_weighted model as one of the top-performing models due to it has the highest recall for the classes 1 and 3, with values of 0.719 and 0.662, respectively, and it also has the highest precision for the class 2, with a value of 0.567. The overall precision and recall values are 0.501 and 0.559, respectively. The F1 Score for this model is 0.501, and the AUC for multi-class is 0.424.
+#### AUC
+
 
 ## Discussion
 
