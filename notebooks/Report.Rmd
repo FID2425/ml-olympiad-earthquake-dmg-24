@@ -89,9 +89,9 @@ To reduce the code duplication and improve the readability of the supervised tra
 
 #### In-depth analysis selection
 
-Since we obtained 15 models as a result of the training, we have decided to choose 6 in order to comment on the most interesting results. In choosing these models, we have relied on the models with the best accuracy, recall, F1-Score and AUC; resulting in:
+Since we obtained 15 models as a result of the training, we have decided to choose 6 in order to comment on the most interesting results. In choosing these models, we have relied on the models with the best precision, recall, F1-Score and AUC; resulting in:
 
-- **Best accuracy**: `rf_filtered` and `rf_weighted`
+- **Best precision**: `rf_filtered` and `rf_weighted`
 
 - **Best recall**: `rf_weighted` and `gbm_pca`
 
@@ -99,13 +99,28 @@ Since we obtained 15 models as a result of the training, we have decided to choo
 
 - **Best AUC**: `gbm_filtered` and `gbm_smote`
 
-In the section [supervised analysis](#supervised-analysis-2) we will analyse the results provided by the rf_onehot, rf_filtered, rf_weigthed, gbm_filtered, gbm_pca and gbm_smote models.
+In the section [supervised analysis results](#supervised-analysis-2) we will analyse the results provided by the rf_onehot, rf_filtered, rf_weigthed, gbm_filtered, gbm_pca and gbm_smote models.
 
 ## Analysis II
 
 *Results: tables and/or figures presenting the obtained results* (1.5 points)
 
-### Supervised Analysis {#supervised-analysis-2}
+### Supervised Analysis Results {#supervised-analysis-2}
+
+In this section, we present the results of the supervised analysis, focusing on the performance of the machine learning models across different datasets and algorithms. We will present the six best models based on the metrics we have mentioned above: precision, recall, F1 Score, and AUC for multi-class.
+
+#### rf_onehot model
+
+We have selected the rf_onehot model as one of the top-performing models as it has achived the highest F1 Score between all models, with a value of 0.523. The precision and recall values for this model are 0.567 and 0.519, respectively. The AUC for multi-class is 0.436.
+
+#### rf_filtered model
+
+The reason for selecting the rf_filtered model as one of the top-performing models is that it has been the model with the highest precision classifying the classes 1 and 3, with values of 0.664 and 0.568. Its overall precision is 0.593 and the recall is 0.5. The F1 Score for this model is 0.475, and the AUC for multi-class is 0.432.
+
+#### rf_weighted model
+
+We have chosen the rf_weighted model as one of the top-performing models due to it has the highest recall for the classes 1 and 3, with values of 0.719 and 0.662, respectively, and it also has the highest precision for the class 2, with a value of 0.567. The overall precision and recall values are 0.501 and 0.559, respectively. The F1 Score for this model is 0.501, and the AUC for multi-class is 0.424.
+
 ## Discussion
 
 *Conclusions that can be drawn from the results* (1.5 points)
