@@ -1,5 +1,7 @@
 ---
 output: html_document
+bibliography: references.bib
+csl: apa.csl
 ---
 
 # Title
@@ -28,9 +30,9 @@ We undertook a structured preprocessing phase to prepare the dataset for effecti
 
 We began by ensuring the dataset’s integrity and consistency. Following the insights gained during the EDA, we reduced the number of columns, getting rid of non-contributive features. The following steps were taken to clean the data:
 
-- **Column Unification:** We consolidated related columns under the `has_secondary_use` group into a single column. This approach addressed inconsistencies and centralized the information for easier interpretation.
+-   **Column Unification:** We consolidated related columns under the `has_secondary_use` group into a single column. This approach addressed inconsistencies and centralized the information for easier interpretation.
 
-- **Column Elimination:** Based on our earlier analysis, we decided to eliminate columns such as `building_id`, `plan_configuration`, `legal_ownership_status`, `count_families`, `has_secondary_use_police`, `has_secondary_use_gov_office`, `has_secondary_use_health_post`, `has_secondary_use_industry`, `has_secondary_use_institution`, `has_secondary_use_school`, and `has_secondary_use_other`. By doing so, we reduced dimensionality and noise, leaving 26 columns in the dataset.
+-   **Column Elimination:** Based on our earlier analysis, we decided to eliminate columns such as `building_id`, `plan_configuration`, `legal_ownership_status`, `count_families`, `has_secondary_use_police`, `has_secondary_use_gov_office`, `has_secondary_use_health_post`, `has_secondary_use_industry`, `has_secondary_use_institution`, `has_secondary_use_school`, and `has_secondary_use_other`. By doing so, we reduced dimensionality and noise, leaving 26 columns in the dataset.
 
 #### 2. Train-Test Split
 
@@ -74,15 +76,36 @@ Specifically, we decided to apply the following algorithms, available in the `ca
 
 It is important to note that we also applied hyperparameter tuning to optimize the models' performance. The `caret` package provided a convenient framework for tuning the algorithms and selecting the best hyperparameters through grid search and cross-validation. By tuning the models, we aimed to improve their predictive accuracy and generalization capabilities, ensuring robust performance on unseen data. As a result, we generated 15 different models from the combination of the three algorithms and five datasets.
 
-Another key aspect of the supervised analysis was evaluating the models' performance using appropriate metrics. We focused on the following evaluation metrics to assess the models' effectiveness:
+Another key aspect of the supervised analysis was evaluating the models' performance using appropriate metrics. We focused on the following evaluation metrics to assess the models' effectiveness: 
 
-[...]
+- **Confusion Matrix:** As the target variable is categorical, we have focused on using this matrix and its metrics as it provides a lot of information about the model. In addition, we decided to use the extended version (`mode = "everything"`) that provides additional information such as the F1-Score, which is useful to us as it is the evaluation metric used in the ml-olympiad. 
 
+- **Area Under the Curve (AUC):** This metric is particularly useful for binary classification problems, providing insights into the model's ability to distinguish between classes. A higher AUC-ROC score indicates better performance, with a value of 0.5 representing random guessing and 1 representing perfect classification. In our case, we saw that R allowed the use of a multi-class auc function and initially used it. However, after the follow-up class, we read the paper [@hand2001simple] in which the implementation is discussed and discovered that in 50% of the cases, the results provided are incorrect. Therefore, following the professor's recommendation, we made use of the Python library defined in
+*Classification performance assessment for imbalanced multiclass data* [@aguilar2024classification], as it obtained really good results compared to the previous one, and we implemented a python wrapper in R using the `reticulate` library to use this python library (`imcp`). 
+
+#### Implementation
+
+To reduce the code duplication and improve the readability of the supervised training, we implemented 3 functions to train the models, generate the confusion matrix and calculate the AUC-ROC score given some information like the `algorithm`, the `tuning grid`, the `dataset`, the `location` to store the predictions, the `test` dataset, etc.
+
+#### In-depth analysis selection
+
+Since we obtained 15 models as a result of the training, we have decided to choose 6 in order to comment on the most interesting results. In choosing these models, we have relied on the models with the best accuracy, recall, F1-Score and AUC; resulting in:
+
+- **Best accuracy**: `rf_filtered` and `rf_weighted`
+
+- **Best recall**: `rf_weighted` and `gbm_pca`
+
+- **Best f1 (mean)**: `rf_onehot` and `gbm_smote`
+
+- **Best AUC**: `gbm_filtered` and `gbm_smote`
+
+In the section [supervised analysis](#supervised-analysis-2) we will analyse the results provided by the rf_onehot, rf_filtered, rf_weigthed, gbm_filtered, gbm_pca and gbm_smote models.
 
 ## Analysis II
 
 *Results: tables and/or figures presenting the obtained results* (1.5 points)
 
+### Supervised Analysis {#supervised-analysis-2}
 ## Discussion
 
 *Conclusions that can be drawn from the results* (1.5 points)
@@ -91,10 +114,6 @@ Another key aspect of the supervised analysis was evaluating the models' perform
 
 *A brief paragraph that "dialogues" with the initial summary* (0.5 points)
 
-# Bibliography
-
-*References to the data and, if relevant, additional sources* (0.5 points)
-
 # Optional
 
 *Deep dive into topics or techniques not covered in class (e.g., filters, wrappers, etc.)* (3 points)
@@ -102,3 +121,6 @@ Another key aspect of the supervised analysis was evaluating the models' perform
 ## Kaiser Criterion
 
 The Kaiser criterion is a widely used method for determining the number of principal components to retain during PCA. It suggests retaining components with eigenvalues greater than 1, as these components explain more variance than a single original variable. By selecting components with eigenvalues above this threshold, we can capture the most significant information in the data while reducing dimensionality. The Kaiser criterion is a valuable tool for balancing the trade-off between complexity and information retention in PCA, ensuring that the transformed dataset remains informative and interpretable.
+
+# Bibliography
+*References to the data and, if relevant, additional sources* (0.5 points)
