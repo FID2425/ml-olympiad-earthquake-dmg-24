@@ -842,15 +842,15 @@ calculated the precision for each class and the average precision for
 the selected models. The table below summarizes the precision scores for
 the selected models, and marks the best score for each class in
 bold:</p>
-<table style="width:100%;">
+<table>
 <colgroup>
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
+<col width="11%" />
+<col width="13%" />
+<col width="16%" />
+<col width="16%" />
+<col width="17%" />
+<col width="11%" />
+<col width="13%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -925,15 +925,15 @@ that are correctly identified by the model. We have calculated the
 recall for each class and the average recall for the selected models.
 The table below summarizes the recall scores for the selected models,
 and marks the best score for each class in bold:</p>
-<table style="width:100%;">
+<table>
 <colgroup>
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
+<col width="10%" />
+<col width="13%" />
+<col width="15%" />
+<col width="15%" />
+<col width="17%" />
+<col width="13%" />
+<col width="13%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -1009,15 +1009,15 @@ recall, crucial for minimizing false positives and false negatives in
 critical applications. In the table below, we present the F1 scores of
 the selected models and the best performing model for each class marked
 in bold:</p>
-<table style="width:100%;">
+<table>
 <colgroup>
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
-<col width="14%" />
+<col width="11%" />
+<col width="13%" />
+<col width="16%" />
+<col width="16%" />
+<col width="17%" />
+<col width="11%" />
+<col width="13%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -1207,6 +1207,86 @@ overfitting.</p>
 <p>By incorporating SMOTE into the preprocessing pipeline, we can create
 a more balanced dataset that leads to better model performance and
 robust predictions.</p>
+</div>
+<div id="auc-multiclass-wrapper" class="section level2">
+<h2>AUC multiclass wrapper</h2>
+<div id="introduction-to-libraries" class="section level3">
+<h3>Introduction to Libraries</h3>
+<p>This code leverages two powerful libraries to bridge R and Python
+functionalities:</p>
+<ol style="list-style-type: decimal">
+<li><strong><code>reticulate</code> (R Library)</strong>:
+<ul>
+<li>The <code>reticulate</code> library in R provides seamless
+integration between R and Python. It allows users to run Python scripts,
+exchange data between R and Python, and access Python libraries directly
+from R. In our implementation, <code>reticulate</code> is used to
+execute a Python script (<code>auc.py</code>) that performs AUC (Area
+Under Curve) calculations and generates a plot.</li>
+</ul></li>
+<li><strong><code>imcp</code> (Python Library)</strong>:
+<ul>
+<li>The <code>imcp</code> Python library is a specialized tool for
+calculating the Integrated Multi-class Performance Curve (IMCP) and its
+associated area. It provides utilities like <code>plot_mcp_curve</code>
+for visualization and <code>imcp_score</code> for performance scoring.
+These functions are used to calculate the AUC and create a plot based on
+the provided data.</li>
+</ul></li>
+</ol>
+</div>
+<div id="implementation-details" class="section level3">
+<h3>Implementation Details</h3>
+<ol style="list-style-type: decimal">
+<li><strong>R Function Overview (<code>get_AUC_and_plot</code> in
+<code>03.02.Supervised Learning.Rmd</code>)</strong>:
+<ul>
+<li>This function serves as a wrapper to preprocess data in R, execute a
+Python script, and return results back to R. Key steps include:
+<ul>
+<li><strong>Preprocessing</strong>: Subsetting the predicted data to
+include only relevant columns and saving both original and predicted
+datasets as temporary CSV files.</li>
+<li><strong>Python Execution</strong>: Using <code>py_run_string</code>
+and <code>py_run_file</code> from <code>reticulate</code> to execute the
+Python script (<code>auc.py</code>), which calculates the AUC and saves
+a performance curve plot.</li>
+<li><strong>Return Values</strong>: The computed AUC value is retrieved
+from Python and returned alongside the plot path.</li>
+</ul></li>
+</ul></li>
+<li><strong>Python Script Overview (<code>auc.py</code> in
+<code>/scripts/auc.py</code>)</strong>:
+<ul>
+<li>This script is responsible for the core computation and
+visualization:
+<ul>
+<li><strong>Data Loading</strong>: The script reads input data files
+containing ground truth (<code>original_data</code>) and predictions
+(<code>predicted_data</code>).</li>
+<li><strong>AUC Calculation</strong>: The <code>imcp_score</code>
+function calculates the AUC based on the IMCP framework, offering a
+detailed multi-class performance metric.</li>
+<li><strong>Plot Generation</strong>: The <code>plot_mcp_curve</code>
+function generates a visualization of the performance curve, which is
+saved as an image for reporting purposes.</li>
+</ul></li>
+</ul></li>
+<li><strong>Data Flow Between R and Python</strong>:
+<ul>
+<li>The R function saves data as CSV files, which act as an interface
+between the two environments. These files are read by the Python script
+for analysis. Similarly, the Python script outputs a saved plot and the
+AUC score, which R retrieves and integrates into its workflow.</li>
+</ul></li>
+</ol>
+</div>
+</div>
+<div id="autoencoder" class="section level2">
+<h2>Autoencoder</h2>
+</div>
+<div id="tsne" class="section level2">
+<h2>TSNE</h2>
 </div>
 </div>
 <div id="bibliography" class="section level1">

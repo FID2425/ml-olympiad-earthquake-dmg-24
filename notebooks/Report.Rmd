@@ -342,87 +342,94 @@ rf_weigthed, gbm_filtered, gbm_pca and gbm_smote models.
 
 ### Unsupervised Analysis
 
-The unsupervised analysis focused on exploring the dataset's structure, 
-patterns, and relationships without using the target variable. We applied
-clustering techniques to identify natural groupings within the data and 
-dimensionality reduction methods to visualize the dataset in lower dimensions.
+The unsupervised analysis focused on exploring the dataset's structure,
+patterns, and relationships without using the target variable. We
+applied clustering techniques to identify natural groupings within the
+data and dimensionality reduction methods to visualize the dataset in
+lower dimensions.
 
 Specifically, we used the following unsupervised learning techniques:
 
--   **K-Means Clustering:** A popular clustering algorithm that partitions 
-    the dataset into `k` clusters based on the similarity of instances based 
-    on a distance metric.  K-Means is effective for identifying distinct 
-    groups within the data and can help reveal underlying patterns 
-    or relationships. 
+-   **K-Means Clustering:** A popular clustering algorithm that
+    partitions the dataset into `k` clusters based on the similarity of
+    instances based on a distance metric. K-Means is effective for
+    identifying distinct groups within the data and can help reveal
+    underlying patterns or relationships.
 
--  **Hierarchical Clustering:** A method that builds a hierarchy of clusters 
-    by recursively merging or splitting groups of instances. Hierarchical 
-    clustering provides insights into the data's structure and can be 
-    visualized using dendrograms to illustrate the relationships between 
-    clusters.
+-   **Hierarchical Clustering:** A method that builds a hierarchy of
+    clusters by recursively merging or splitting groups of instances.
+    Hierarchical clustering provides insights into the data's structure
+    and can be visualized using dendrograms to illustrate the
+    relationships between clusters.
 
--  **Autoencoder:** A neural network architecture used for dimensionality 
-    reduction and feature learning. Autoencoders learn to encode the input 
-    data into a lower-dimensional representation and then decode it back to 
-    the original space. By compressing the data into a latent space, 
-    autoencoders can capture essential features and patterns in the data.
-    
--  **t-SNE (t-Distributed Stochastic Neighbor Embedding):** A nonlinear 
-    dimensionality reduction technique that maps high-dimensional data to 
-    a lower-dimensional space while preserving local relationships. t-SNE 
-    is particularly effective for visualizing complex datasets and revealing 
-    clusters or patterns that may not be apparent in higher dimensions.
-    
-We have done clustering on the `numeric` dataset, and we have used the `onehot`
-dataset for the dimensionality reduction techniques. We have used the `pca` dataset
-to compare the results of the clustering and dimensionality reduction techniques.
+-   **Autoencoder:** A neural network architecture used for
+    dimensionality reduction and feature learning. Autoencoders learn to
+    encode the input data into a lower-dimensional representation and
+    then decode it back to the original space. By compressing the data
+    into a latent space, autoencoders can capture essential features and
+    patterns in the data.
 
-For evaluating optimal clustering number with `k-means` we have used the `elbow`
-and `silhouette` methods. Also we used `paarcord` to visualize high-dimensional 
-data after clustering.
+-   **t-SNE (t-Distributed Stochastic Neighbor Embedding):** A nonlinear
+    dimensionality reduction technique that maps high-dimensional data
+    to a lower-dimensional space while preserving local relationships.
+    t-SNE is particularly effective for visualizing complex datasets and
+    revealing clusters or patterns that may not be apparent in higher
+    dimensions.
 
-In order to compare the results of the dimensionality reduction we have compared 
-3 dimensionality reduction techniques: `pca`, `autoencoder` and `t-sne`. We have
-used the 3 first components of the `pca` dataset, for comparing the results of the
-reduction into 3 dimensions.
+We have done clustering on the `numeric` dataset, and we have used the
+`onehot` dataset for the dimensionality reduction techniques. We have
+used the `pca` dataset to compare the results of the clustering and
+dimensionality reduction techniques.
+
+For evaluating optimal clustering number with `k-means` we have used the
+`elbow` and `silhouette` methods. Also we used `paarcord` to visualize
+high-dimensional data after clustering.
+
+In order to compare the results of the dimensionality reduction we have
+compared 3 dimensionality reduction techniques: `pca`, `autoencoder` and
+`t-sne`. We have used the 3 first components of the `pca` dataset, for
+comparing the results of the reduction into 3 dimensions.
 
 ### Implementation
 
-We have implemented the unsupervised analysis using the `cluster`, `dbscan`
-libraries for clustering, the `keras` library for the autoencoder and the `Rtsne`
-library for the t-SNE. We have also used the `factoextra`, `mass` and `plotly` 
-libraries for the visualization.
+We have implemented the unsupervised analysis using the `cluster`,
+`dbscan` libraries for clustering, the `keras` library for the
+autoencoder and the `Rtsne` library for the t-SNE. We have also used the
+`factoextra`, `mass` and `plotly` libraries for the visualization.
 
 ### In-depth analysis
 
-We first aplied the `k-means` and `hierarchical` clustering algorithms with the
-`numeric` dataset. Having no clear conclusions or patterns identified
-after the clustering, we decided follow upwith dimensionality reduction 
-techniques. We have applied the `autoencoder` to reduce the `onehot` dataset 
-from 43 to 8 dimensions with minimal loss of information. 
+We first aplied the `k-means` and `hierarchical` clustering algorithms
+with the `numeric` dataset. Having no clear conclusions or patterns
+identified after the clustering, we decided follow upwith dimensionality
+reduction techniques. We have applied the `autoencoder` to reduce the
+`onehot` dataset from 43 to 8 dimensions with minimal loss of
+information.
 
-We have also applied an `autoencoder` to reduce it to 3 dimensions, and we have 
-compared the results with the `pca` and `t-sne` techniques. We tried to visualize
-if there was any pattern in the data related to the target variable
-`damage_grade`. For `t-sne` no clear pattern was found, but for `pca` and 
-`autoencoder` we found that buildings with `damage_grade` 1 were mostly separated
-from `damage_grade` 2 and 3. 
+We have also applied an `autoencoder` to reduce it to 3 dimensions, and
+we have compared the results with the `pca` and `t-sne` techniques. We
+tried to visualize if there was any pattern in the data related to the
+target variable `damage_grade`. For `t-sne` no clear pattern was found,
+but for `pca` and `autoencoder` we found that buildings with
+`damage_grade` 1 were mostly separated from `damage_grade` 2 and 3.
 
-Then, we run the `k-means` clustering algorithms with the `autoencoder`, `pca`
-and `t-sne` datasets. We have used the `elbow` and `silhouette` methods to find 
-the optimal number of clusters. We have found that the optimal number of clusters
-is 2 for the `autoencoder` and `pca` datasets, and 11 for the `t-sne` dataset. 
-For the `pca` dataset we can see that the clusters kind of separate the buildings
-for `damage_grade` 1 from the rest, but for the `autoencoder` dataset the clusters
-are not as clear. For the `t-sne` dataset we can see that the clusters are not
-related to the `damage_grade` variable, giving us the idea that the `t-sne` is 
-giving us patterns that are not related to the target variable.
+Then, we run the `k-means` clustering algorithms with the `autoencoder`,
+`pca` and `t-sne` datasets. We have used the `elbow` and `silhouette`
+methods to find the optimal number of clusters. We have found that the
+optimal number of clusters is 2 for the `autoencoder` and `pca`
+datasets, and 11 for the `t-sne` dataset. For the `pca` dataset we can
+see that the clusters kind of separate the buildings for `damage_grade`
+1 from the rest, but for the `autoencoder` dataset the clusters are not
+as clear. For the `t-sne` dataset we can see that the clusters are not
+related to the `damage_grade` variable, giving us the idea that the
+`t-sne` is giving us patterns that are not related to the target
+variable.
 
-Lastly, we runed `db-scan` clustering algorithm with the `autoencoder` and `t-sne`
-datasets. We have used the `elbow` methods to find the optimal `eps` value. We have
-found no clear clusters for the `autoencoder` dataset, but for the `t-sne` dataset
-we have found 14 clusters that are not related to the `damage_grade` variable.
-
+Lastly, we runed `db-scan` clustering algorithm with the `autoencoder`
+and `t-sne` datasets. We have used the `elbow` methods to find the
+optimal `eps` value. We have found no clear clusters for the
+`autoencoder` dataset, but for the `t-sne` dataset we have found 14
+clusters that are not related to the `damage_grade` variable.
 
 ## Analysis II
 
@@ -446,7 +453,7 @@ the selected models. The table below summarizes the precision scores for
 the selected models, and marks the best score for each class in bold:
 
 | Class   | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
-|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+|---------|-----------|-------------|-------------|--------------|---------|-----------|
 | **1**   | 0.655     | **0.664**   | 0.503       | 0.617        | 0.000   | 0.574     |
 | **2**   | 0.554     | 0.548       | **0.567**   | 0.549        | 0.518   | 0.551     |
 | **3**   | 0.492     | **0.568**   | 0.434       | 0.453        | 0.070   | 0.454     |
@@ -476,7 +483,7 @@ below summarizes the recall scores for the selected models, and marks
 the best score for each class in bold:
 
 | Class   | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca   | gbm_smote |
-|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+|---------|-----------|-------------|-------------|--------------|-----------|-----------|
 | **1**   | 0.548     | 0.526       | **0.719**   | 0.526        | 0.000     | 0.519     |
 | **2**   | 0.760     | 0.879       | 0.295       | 0.671        | **0.884** | 0.584     |
 | **3**   | 0.250     | 0.096       | **0.662**   | 0.331        | 0.019     | 0.435     |
@@ -507,7 +514,7 @@ the selected models and the best performing model for each class marked
 in bold:
 
 | Class   | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
-|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+|---------|-----------|-------------|-------------|--------------|---------|-----------|
 | **1**   | **0.597** | 0.587       | 0.591       | 0.568        | NA      | 0.545     |
 | **2**   | 0.641     | **0.675**   | 0.387       | 0.603        | 0.653   | 0.567     |
 | **3**   | 0.332     | 0.164       | **0.423**   | 0.382        | 0.030   | 0.444     |
@@ -533,7 +540,7 @@ performance. The table below presents the AUC-ROC scores for the
 selected models:
 
 | Metric | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
-|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+|----|----|----|----|----|----|----|
 | AUC multiclass | 0.436 | 0.432 | 0.423 | 0.443 | 0.342 | **0.444** |
 
 The AUC-ROC scores show that the `gbm_smote` model performs best, with
@@ -623,6 +630,67 @@ noise and affect the model's performance, or even lead to overfitting.
 By incorporating SMOTE into the preprocessing pipeline, we can create a
 more balanced dataset that leads to better model performance and robust
 predictions.
+
+## AUC multiclass wrapper
+
+### Introduction to Libraries
+
+This code leverages two powerful libraries to bridge R and Python
+functionalities:
+
+1.  **`reticulate` (R Library)**:
+    -   The `reticulate` library in R provides seamless integration
+        between R and Python. It allows users to run Python scripts,
+        exchange data between R and Python, and access Python libraries
+        directly from R. In our implementation, `reticulate` is used to
+        execute a Python script (`auc.py`) that performs AUC (Area Under
+        Curve) calculations and generates a plot.
+2.  **`imcp` (Python Library)**:
+    -   The `imcp` Python library is a specialized tool for calculating
+        the Integrated Multi-class Performance Curve (IMCP) and its
+        associated area. It provides utilities like `plot_mcp_curve` for
+        visualization and `imcp_score` for performance scoring. These
+        functions are used to calculate the AUC and create a plot based
+        on the provided data.
+
+### Implementation Details
+
+1.  **R Function Overview (`get_AUC_and_plot` in
+    `03.02.Supervised Learning.Rmd`)**:
+    -   This function serves as a wrapper to preprocess data in R,
+        execute a Python script, and return results back to R. Key steps
+        include:
+        -   **Preprocessing**: Subsetting the predicted data to include
+            only relevant columns and saving both original and predicted
+            datasets as temporary CSV files.
+        -   **Python Execution**: Using `py_run_string` and
+            `py_run_file` from `reticulate` to execute the Python script
+            (`auc.py`), which calculates the AUC and saves a performance
+            curve plot.
+        -   **Return Values**: The computed AUC value is retrieved from
+            Python and returned alongside the plot path.
+2.  **Python Script Overview (`auc.py` in `/scripts/auc.py`)**:
+    -   This script is responsible for the core computation and
+        visualization:
+        -   **Data Loading**: The script reads input data files
+            containing ground truth (`original_data`) and predictions
+            (`predicted_data`).
+        -   **AUC Calculation**: The `imcp_score` function calculates
+            the AUC based on the IMCP framework, offering a detailed
+            multi-class performance metric.
+        -   **Plot Generation**: The `plot_mcp_curve` function generates
+            a visualization of the performance curve, which is saved as
+            an image for reporting purposes.
+3.  **Data Flow Between R and Python**:
+    -   The R function saves data as CSV files, which act as an
+        interface between the two environments. These files are read by
+        the Python script for analysis. Similarly, the Python script
+        outputs a saved plot and the AUC score, which R retrieves and
+        integrates into its workflow.
+
+## Autoencoder
+
+## TSNE
 
 # Bibliography
 
