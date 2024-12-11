@@ -380,6 +380,7 @@ We have done clustering on the `numeric` dataset, and we have used the
 `onehot` dataset for the dimensionality reduction techniques. We have
 used the `pca` dataset to compare the results of the clustering and
 dimensionality reduction techniques.
+<<<<<<< Updated upstream
 
 For evaluating optimal clustering number with `k-means` we have used the
 `elbow` and `silhouette` methods. Also we used `paarcord` to visualize
@@ -389,16 +390,28 @@ In order to compare the results of the dimensionality reduction we have
 compared 3 dimensionality reduction techniques: `pca`, `autoencoder` and
 `t-sne`. We have used the 3 first components of the `pca` dataset, for
 comparing the results of the reduction into 3 dimensions.
+=======
+>>>>>>> Stashed changes
 
-### Implementation
+For evaluating optimal clustering number with `k-means` we have used the
+`elbow` and `silhouette` methods. Also we used `paarcord` to visualize
+high-dimensional data after clustering.
 
+<<<<<<< Updated upstream
 We have implemented the unsupervised analysis using the `cluster`,
 `dbscan` libraries for clustering, the `keras` library for the
 autoencoder and the `Rtsne` library for the t-SNE. We have also used the
 `factoextra`, `mass` and `plotly` libraries for the visualization.
+=======
+In order to compare the results of the dimensionality reduction we have
+compared 3 dimensionality reduction techniques: `pca`, `autoencoder` and
+`t-sne`. We have used the 3 first components of the `pca` dataset, for
+comparing the results of the reduction into 3 dimensions.
+>>>>>>> Stashed changes
 
-### In-depth analysis
+#### Implementation
 
+<<<<<<< Updated upstream
 We first aplied the `k-means` and `hierarchical` clustering algorithms
 with the `numeric` dataset. Having no clear conclusions or patterns
 identified after the clustering, we decided follow upwith dimensionality
@@ -425,6 +438,41 @@ related to the `damage_grade` variable, giving us the idea that the
 `t-sne` is giving us patterns that are not related to the target
 variable.
 
+=======
+We have implemented the unsupervised analysis using the `cluster`,
+`dbscan` libraries for clustering, the `keras` library for the
+autoencoder and the `Rtsne` library for the t-SNE. We have also used the
+`factoextra`, `mass` and `plotly` libraries for the visualization.
+
+#### In-depth analysis
+
+We first aplied the `k-means` and `hierarchical` clustering algorithms
+with the `numeric` dataset. Having no clear conclusions or patterns
+identified after the clustering, we decided follow upwith dimensionality
+reduction techniques. We have applied the `autoencoder` to reduce the
+`onehot` dataset from 43 to 8 dimensions with minimal loss of
+information.
+
+We have also applied an `autoencoder` to reduce it to 3 dimensions, and
+we have compared the results with the `pca` and `t-sne` techniques. We
+tried to visualize if there was any pattern in the data related to the
+target variable `damage_grade` or any pattern in building properties at all. For `t-sne` no clear pattern was found,
+but for `pca` and `autoencoder` we found that buildings with
+`damage_grade` 1 were mostly separated from `damage_grade` 2 and 3.
+
+Then, we run the `k-means` clustering algorithms with the `autoencoder`,
+`pca` and `t-sne` datasets. We have used the `elbow` and `silhouette`
+methods to find the optimal number of clusters. We have found that the
+optimal number of clusters is 2 for the `autoencoder` and `pca`
+datasets, and 11 for the `t-sne` dataset. For the `pca` dataset we can
+see that the clusters kind of separate the buildings for `damage_grade`
+1 from the rest, but for the `autoencoder` dataset the clusters are not
+as clear. For the `t-sne` dataset we can see that the clusters are not
+related to the `damage_grade` variable, giving us the idea that the
+`t-sne` is giving us patterns that are not related to the target
+variable.
+
+>>>>>>> Stashed changes
 Lastly, we runed `db-scan` clustering algorithm with the `autoencoder`
 and `t-sne` datasets. We have used the `elbow` methods to find the
 optimal `eps` value. We have found no clear clusters for the
@@ -572,6 +620,81 @@ without sharp increases, indicating that our model's predictions are
 only moderately better than random guessing. This AUC score reflects the
 performance of the `gbm_smote` model as one of the best among the models
 we evaluated, though there is still room for improvement.
+
+### Unsupervised Analysis Results
+
+#### K-Means Clustering
+
+The K-Means clustering algorithm was applied to the `numeric` dataset to
+identify natural groupings within the data. We used the `elbow` and
+`silhouette` methods to determine the optimal number of clusters. The
+results are summarized below:
+-  **Elbow Method:** The elbow method did not give us any valuable insights
+on the number of clusters, as the plot did not show a clear inflection.
+-  **Silhouette Method:** The silhouette method suggested that the optimal
+number of clusters is 2, with a silhouette score of ~0.25.
+
+With this information we procceded to plot the data using the parallel 
+coordinates plot, which allowed us to visualize the clusters and their
+distribution. The plot did not showed any clear difference, as most features
+were binary and those which weren't did not show any clear pattern or 
+difference in value distribution.
+
+#### Hierarchical Clustering
+
+With this in mind we decided to look for finer-grained clusters using the
+hierarchical clustering algorithm, with the goal of finding more detailed
+patterns in the data. We used two methods: `ward.D2` and `complete`, and plotted
+the dendrograms for both. The results were very close to non-informative. Both
+finished with a very large cluster and a significantly smaller one and there did
+not seem to be any patters on the data once more.
+
+After this we decided to move on to the dimensionality reduction techniques
+as to extract patters with more complex techniques which may not be able to
+be extracted with traditional clustering techniques. These techniques would
+also allow us to visualize the data in lower dimensions, which would be
+useful for interpretation.
+
+#### Autoencoder
+
+We applied the autoencoder to the `onehot` dataset to reduce the dimensions
+from 43 to 8. The autoencoder was trained for 100 epochs, and the loss
+decreased steadily over time, indicating that the model was learning the
+underlying structure of the data. As we obtained very promising results, we 
+decided to apply again the autoencoder to reduce the dimensions to 3, and
+then plot it in three dimensions. The results showed two clearly distinct
+clusters, which after colouring with the data of the `damage_grade` column,
+showed one of the clusters mostly corresponding to buildings with `damage_grade`
+equal to 1, and the other group being more noisy with no clear differentiation
+of properties between building with `damage_grade` equal to 2 and 3.
+
+#### t-SNE
+
+After that, we tried with the t-SNE technique, which is a non-linear
+dimensionality reduction technique that maps high-dimensional data to a
+lower-dimensional space while preserving local relationships. We applied
+t-SNE to the `onehot` dataset to reduce the dimensions to 3 and visualize
+the data in a lower-dimensional space. The results showed a more complex
+distribution of the data, but this time it did show clear separation between
+clusters, which were not related to the `damage_grade` variable.
+
+#### K-Means over 3 dimensions
+
+After dimensionality reduction, we applied the K-Means clustering algorithm
+to the datasets generated by the autoencoder, t-Sne and PCA techniques. We 
+again applied the elbow and silhouette methods to determine the optimal number
+of clusters for each dataset. Finding once more for the autoencoder and PCA
+datasets that the optimal number of clusters was 2, and for the t-SNE dataset
+we found the optimal number to be 11, which reafirms the idea that the t-SNE
+is giving us patterns that are not related to the target variable. We will
+discuss these implications further in the document.
+
+#### DB-Scan
+
+Lastly, we applied the DB-Scan clustering algorithm to the autoencoder and
+t-SNE datasets. We used the elbow method to find the optimal `eps` value for
+each dataset. We found that for the autoencoder dataset there were no clear
+clusters, but for the t-SNE dataset we found 13 clusters and several outliers.
 
 ## Discussion
 
