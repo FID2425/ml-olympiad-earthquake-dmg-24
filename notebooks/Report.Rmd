@@ -24,6 +24,14 @@ earthquake damage
 
 *Outline the general problem and where the data comes from* (0.5 points)
 
+The dataset selected in this project is derived from the extensive damage assessment conducted following the 2015 Gorkha earthquake in Nepal. This earthquake, which struck on April 25, 2015, with a magnitude of 7.8, resulted in widespread destruction across the region, affecting over 8 million people and leading to significant economic losses estimated at around $7 billion. The earthquake caused severe damage to approximately 500,000 buildings, highlighting the urgent need for effective post-disaster recovery strategies.
+
+The data collected encompasses detailed information on 4000 buildings, including various construction types such as reinforced concrete, brick masonry, and stone masonry. This dataset provides valuable insights into the impacts of the earthquake on different building structures and their vulnerabilities.
+
+Key features included in the dataset consist of building-specific attributes such as age, height, land surface condition, house position, plan configuration, foundation type, ground floor type, roof type and superstructure type.
+
+This analysis was developed as part of a Data Mining project for a Machine Learning Olympiad (2024). The comprehensive nature of this dataset allows for an in-depth examination of the factors influencing building damage and recovery needs. By leveraging advanced machine learning techniques, the study aims to enhance the accuracy of damage predictions and inform effective rehabilitation interventions. This effort not only contributes to improved urban resilience and disaster recovery planning but also serves as a benchmark for integrating data-driven solutions into post-disaster recovery strategies globally.
+
 # Methodology
 
 ## Data
