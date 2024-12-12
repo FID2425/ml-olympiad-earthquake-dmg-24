@@ -920,7 +920,15 @@ functionalities:
 
 ## Autoencoder
 
+The autoencoder is a type of artificial neural network used for unsupervised learning, particularly for dimensionality reduction. It consists of two main parts: the encoder, which compresses the input data into a lower-dimensional representation, and the decoder, which reconstructs the original data from this compressed form. This technique is valuable because it allows for the extraction of meaningful features from high-dimensional data while minimizing information loss.
+
+In our analysis, we applied the autoencoder to the onehot dataset, reducing its dimensionality from 43 to 8. This reduction was achieved with minimal loss of information, making it easier to visualize and analyze the data. Furthermore, we explored reducing the dataset to 3 dimensions, which facilitated the application of clustering algorithms. The results indicated that the autoencoder effectively captured the underlying structure of the data, revealing clusters that corresponded to different damage grades.
+
 ## TSNE
+
+t-SNE (t-distributed Stochastic Neighbor Embedding) is a powerful non-linear dimensionality reduction technique particularly suited for visualizing high-dimensional datasets. It works by converting similarities between data points into joint probabilities and then minimizing the divergence between these probabilities in the high-dimensional space and the lower-dimensional representation. This method is especially valuable for visualizing complex datasets, as it preserves local structures and reveals clusters that may not be apparent in the original high-dimensional space.
+
+In our study, we applied t-SNE to the onehot dataset to reduce its dimensions to 3, allowing for effective visualization of the data. The resulting plots demonstrated a complex distribution with several clusters; however, these clusters did not correlate with the damage_grade variable contrary to the other techniques applied. This finding suggests that t-SNE is to be applied on different contexts to other dimensionality reduction techniques and may be used in parallel to extract additional insights from the data.
 
 # Bibliography
 
