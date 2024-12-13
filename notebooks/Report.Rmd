@@ -20,6 +20,8 @@ earthquake damage
 
 *A paragraph summarizing the presented content* (0.5 points)
 
+This project presents a comprehensive analysis of earthquake damage, focusing on the aftermath of the 2015 Gorkha earthquake in Nepal, which resulted in significant destruction and loss of life. The dataset utilized comprises detailed information on 4,000 buildings affected by the earthquake, encompassing various construction types such as reinforced concrete, brick masonry, and stone masonry. Key attributes include building age, height, land surface condition, house position, plan configuration, foundation type, ground floor type, roof type, and superstructure type. Through a systematic approach involving exploratory data analysis (EDA), data cleaning, and advanced machine learning techniques, we aimed to identify the factors influencing building damage and recovery needs. The methodology included dimensionality reduction techniques, such as Principal Component Analysis (PCA) and autoencoders, to visualize high-dimensional data and other techniques like SMOTE or weigthed classification. However, challenges such as low data interpretability, low feature variability, and unbalanced class distributions hindered predictive performance and limited insights, particularly for distinguishing between damage grades 2 and 3. Dimensionality reduction techniques and clustering methods, including t-SNE, revealed some building groupings but failed to correlate strongly with the target variable due to insufficient granularity in the data. These limitations highlighted the importance of integrating additional features, such as environmental and geographic data, to enhance model accuracy and interpretability. Despite these challenges, the study provides a foundation for improving earthquake damage prediction and recovery strategies using data-driven approaches.
+
 # Introduction
 
 *Outline the general problem and where the data comes from* (0.5 points)
@@ -815,10 +817,19 @@ clusters, but for the t-SNE dataset we found 13 clusters and several outliers.
 
 *Conclusions that can be drawn from the results* (1.5 points)
 
+
+The data presented challenges related to its interpretability, variability, and balance, which significantly impacted the predictive modeling results. A critical limitation was the low interpretability of categorical features, such as those encoded with single characters, which hindered the ability to extract meaningful patterns and relationships. Furthermore, low variability in some features limited the model’s capacity to generalize and differentiate between the damage grades effectively. Combined with an unbalanced class distribution, the models struggled to achieve consistent accuracy across all categories, particularly for damage grades 2 and 3.
+
+Dimensionality reduction techniques, including PCA, autoencoders, and t-SNE, were explored to identify latent patterns and simplify data representation. While these methods revealed clusters, especially through t-SNE, these clusters were not strongly correlated with the target variable, suggesting a lack of granularity or completeness in the dataset. For instance, crucial data points such as the distance from the earthquake epicenter, adjacent structures, and other environmental factors were missing, limiting the depth of analysis. Additionally, the arbitrary selection of damage grade 2 and 3 instances, potentially to increase challenge complexity in the ML Olympiad, may have introduced random noise, further reducing predictive accuracy.
+
 # Conclusions
 
 *A brief paragraph that "dialogues" with the initial summary* (0.5
 points)
+
+This study underscores significant limitations and insights into the dataset and its influence on modeling earthquake damage to buildings. The data's low interpretability and variability, coupled with its unbalanced distribution, created challenges for extracting meaningful relationships, particularly between damage grades 2 and 3. Despite employing advanced preprocessing and analysis techniques, the lack of distinctive patterns between these grades limited the models' predictive effectiveness. Dimensionality reduction and clustering methods offered some insight but failed to provide robust segmentation tied to the target variables.
+
+Future improvements should focus on collecting and integrating additional, highly relevant features, such as geographical data, surrounding building characteristics, and other environmental attributes, to enhance the granularity of the dataset. Furthermore, a detailed review of the data preparation process to avoid arbitrary selection biases could yield more representative distributions. While current findings highlight the limitations, they also pave the way for more robust, feature-rich datasets that can better predict building resilience in seismic events.
 
 # Outstanding tasks
 
