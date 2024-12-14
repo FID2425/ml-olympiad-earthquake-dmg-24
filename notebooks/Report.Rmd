@@ -78,7 +78,7 @@ data-driven solutions into post-disaster recovery strategies globally.
 
 ### Exploratory Analysis
 
-*This part is developed in detail in* `01. Exploratory Analysis.Rmd`
+*This part is explained in detail in* `01. Exploratory Analysis.Rmd`
 
 The exploratory data analysis (EDA) phase was crucial for understanding
 the dataset, identifying patterns, and gaining insights into the
@@ -204,7 +204,7 @@ building preliminary models to confirm this would be beneficial still: -
 
 ### Preprocessing
 
-*This part is developed in detail in* `02. Preprocessing.Rmd`
+*This part is explained in detail in* `02. Preprocessing.Rmd`
 
 We undertook a structured preprocessing phase to prepare the dataset for
 effective machine learning modeling. This phase focused on cleaning the
@@ -298,7 +298,7 @@ adopted two different techniques to improve the dataset’s balance:
 
 ### Supervised Analysis
 
-*This part is developed in detail in* `03.02. Supervised Learning.Rmd`
+*This part is explained in detail in* `03.02. Supervised Learning.Rmd`
 
 The supervised analysis involved training and evaluating multiple
 machine learning models to predict the damage grade of buildings after
@@ -392,7 +392,7 @@ rf_weigthed, gbm_filtered, gbm_pca and gbm_smote models.
 
 ### Unsupervised Analysis
 
-*This part is developed in detail in* `03.01. Unsupervised Learning.Rmd`
+*This part is explained in detail in* `03.01. Unsupervised Learning.Rmd`
 
 The unsupervised analysis focused on exploring the dataset's structure,
 patterns, and relationships without using the target variable. We
@@ -856,7 +856,7 @@ and several outliers.
 
 <div>
 
-<center><b>Figure 11:</b> t-Sne clusters obtained with K-Means</center>
+<center><b>Figure 11:</b> t-Sne clusters obtained with DB-Scan</center>
 
 </div>
 
