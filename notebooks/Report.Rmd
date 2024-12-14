@@ -1,7 +1,7 @@
 ---
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 bibliography: references.bib
 csl: apa.csl
 editor_options:
@@ -9,39 +9,76 @@ editor_options:
     wrap: 72
 ---
 
-# Title
-
-*Should be brief and explanatory* (0.25 points)
-
-Why do buildings collapse? A predictive and descriptive analysis of
-earthquake damage
+# Why do buildings collapse? A predictive and descriptive analysis of earthquake damage
 
 # Summary
 
-*A paragraph summarizing the presented content* (0.5 points)
-
-This project presents a comprehensive analysis of earthquake damage, focusing on the aftermath of the 2015 Gorkha earthquake in Nepal, which resulted in significant destruction and loss of life. The dataset utilized comprises detailed information on 4,000 buildings affected by the earthquake, encompassing various construction types such as reinforced concrete, brick masonry, and stone masonry. Key attributes include building age, height, land surface condition, house position, plan configuration, foundation type, ground floor type, roof type, and superstructure type. Through a systematic approach involving exploratory data analysis (EDA), data cleaning, and advanced machine learning techniques, we aimed to identify the factors influencing building damage and recovery needs. The methodology included dimensionality reduction techniques, such as Principal Component Analysis (PCA) and autoencoders, to visualize high-dimensional data and other techniques like SMOTE or weigthed classification. However, challenges such as low data interpretability, low feature variability, and unbalanced class distributions hindered predictive performance and limited insights, particularly for distinguishing between damage grades 2 and 3. Dimensionality reduction techniques and clustering methods, including t-SNE, revealed some building groupings but failed to correlate strongly with the target variable due to insufficient granularity in the data. These limitations highlighted the importance of integrating additional features, such as environmental and geographic data, to enhance model accuracy and interpretability. Despite these challenges, the study provides a foundation for improving earthquake damage prediction and recovery strategies using data-driven approaches.
+This project presents a comprehensive analysis of earthquake damage,
+focusing on the aftermath of the 2015 Gorkha earthquake in Nepal, which
+resulted in significant destruction and loss of life. The dataset
+utilized comprises detailed information on 4,000 buildings affected by
+the earthquake, encompassing various construction types such as
+reinforced concrete, brick masonry, and stone masonry. Key attributes
+include building age, height, land surface condition, house position,
+plan configuration, foundation type, ground floor type, roof type, and
+superstructure type. Through a systematic approach involving exploratory
+data analysis (EDA), data cleaning, and advanced machine learning
+techniques, we aimed to identify the factors influencing building damage
+and recovery needs. The methodology included dimensionality reduction
+techniques, such as Principal Component Analysis (PCA) and autoencoders,
+to visualize high-dimensional data and other techniques like SMOTE or
+weigthed classification. However, challenges such as low data
+interpretability, low feature variability, and unbalanced class
+distributions hindered predictive performance and limited insights,
+particularly for distinguishing between damage grades 2 and 3.
+Dimensionality reduction techniques and clustering methods, including
+t-SNE, revealed some building groupings but failed to correlate strongly
+with the target variable due to insufficient granularity in the data.
+These limitations highlighted the importance of integrating additional
+features, such as environmental and geographic data, to enhance model
+accuracy and interpretability. Despite these challenges, the study
+provides a foundation for improving earthquake damage prediction and
+recovery strategies using data-driven approaches.
 
 # Introduction
 
-*Outline the general problem and where the data comes from* (0.5 points)
+The dataset selected in this project is derived from the extensive
+damage assessment conducted following the 2015 Gorkha earthquake in
+Nepal. This earthquake, which struck on April 25, 2015, with a magnitude
+of 7.8, resulted in widespread destruction across the region, affecting
+over 8 million people and leading to significant economic losses
+estimated at around \$7 billion. The earthquake caused severe damage to
+approximately 500,000 buildings, highlighting the urgent need for
+effective post-disaster recovery strategies.
 
-The dataset selected in this project is derived from the extensive damage assessment conducted following the 2015 Gorkha earthquake in Nepal. This earthquake, which struck on April 25, 2015, with a magnitude of 7.8, resulted in widespread destruction across the region, affecting over 8 million people and leading to significant economic losses estimated at around $7 billion. The earthquake caused severe damage to approximately 500,000 buildings, highlighting the urgent need for effective post-disaster recovery strategies.
+The data collected encompasses detailed information on 4000 buildings,
+including various construction types such as reinforced concrete, brick
+masonry, and stone masonry. This dataset provides valuable insights into
+the impacts of the earthquake on different building structures and their
+vulnerabilities.
 
-The data collected encompasses detailed information on 4000 buildings, including various construction types such as reinforced concrete, brick masonry, and stone masonry. This dataset provides valuable insights into the impacts of the earthquake on different building structures and their vulnerabilities.
+Key features included in the dataset consist of building-specific
+attributes such as age, height, land surface condition, house position,
+plan configuration, foundation type, ground floor type, roof type and
+superstructure type.
 
-Key features included in the dataset consist of building-specific attributes such as age, height, land surface condition, house position, plan configuration, foundation type, ground floor type, roof type and superstructure type.
-
-This analysis was developed as part of a Data Mining project for a Machine Learning Olympiad (2024). The comprehensive nature of this dataset allows for an in-depth examination of the factors influencing building damage and recovery needs. By leveraging advanced machine learning techniques, the study aims to enhance the accuracy of damage predictions and inform effective rehabilitation interventions. This effort not only contributes to improved urban resilience and disaster recovery planning but also serves as a benchmark for integrating data-driven solutions into post-disaster recovery strategies globally.
+This analysis was developed as part of a Data Mining project for a
+Machine Learning Olympiad (2024). The comprehensive nature of this
+dataset allows for an in-depth examination of the factors influencing
+building damage and recovery needs. By leveraging advanced machine
+learning techniques, the study aims to enhance the accuracy of damage
+predictions and inform effective rehabilitation interventions. This
+effort not only contributes to improved urban resilience and disaster
+recovery planning but also serves as a benchmark for integrating
+data-driven solutions into post-disaster recovery strategies globally.
 
 # Methodology
 
 ## Data
 
-*Initial exploration of the data to understand the problem:
-preprocessing and visualization*
-
 ### Exploratory Analysis
+
+*This part is developed in detail in* `01. Exploratory Analysis.Rmd`
 
 The exploratory data analysis (EDA) phase was crucial for understanding
 the dataset, identifying patterns, and gaining insights into the
@@ -167,6 +204,8 @@ building preliminary models to confirm this would be beneficial still: -
 
 ### Preprocessing
 
+*This part is developed in detail in* `02. Preprocessing.Rmd`
+
 We undertook a structured preprocessing phase to prepare the dataset for
 effective machine learning modeling. This phase focused on cleaning the
 data, addressing class imbalances, and formatting the dataset to
@@ -257,10 +296,9 @@ adopted two different techniques to improve the dataset’s balance:
 
 ## Analysis I
 
-*Tasks: supervised analysis, unsupervised analysis, comparison of
-results, etc.* (3 points)
-
 ### Supervised Analysis
+
+*This part is developed in detail in* `03.02. Supervised Learning.Rmd`
 
 The supervised analysis involved training and evaluating multiple
 machine learning models to predict the damage grade of buildings after
@@ -353,6 +391,8 @@ will analyse the results provided by the rf_onehot, rf_filtered,
 rf_weigthed, gbm_filtered, gbm_pca and gbm_smote models.
 
 ### Unsupervised Analysis
+
+*This part is developed in detail in* `03.01. Unsupervised Learning.Rmd`
 
 The unsupervised analysis focused on exploring the dataset's structure,
 patterns, and relationships without using the target variable. We
@@ -447,9 +487,10 @@ information.
 We have also applied an `autoencoder` to reduce it to 3 dimensions, and
 we have compared the results with the `pca` and `t-sne` techniques. We
 tried to visualize if there was any pattern in the data related to the
-target variable `damage_grade` or any pattern in building properties at all. For `t-sne` no clear pattern was found,
-but for `pca` and `autoencoder` we found that buildings with
-`damage_grade` 1 were mostly separated from `damage_grade` 2 and 3.
+target variable `damage_grade` or any pattern in building properties at
+all. For `t-sne` no clear pattern was found, but for `pca` and
+`autoencoder` we found that buildings with `damage_grade` 1 were mostly
+separated from `damage_grade` 2 and 3.
 
 Then, we run the `k-means` clustering algorithms with the `autoencoder`,
 `pca` and `t-sne` datasets. We have used the `elbow` and `silhouette`
@@ -471,9 +512,6 @@ clusters that are not related to the `damage_grade` variable.
 
 ## Analysis II
 
-*Results: tables and/or figures presenting the obtained results* (1.5
-points)
-
 ### Supervised Analysis Results {#supervised-analysis-2}
 
 In this section, we present the results of the supervised analysis,
@@ -491,7 +529,7 @@ the selected models. The table below summarizes the precision scores for
 the selected models, and marks the best score for each class in bold:
 
 | Class   | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
-|---------|-----------|-------------|-------------|--------------|---------|-----------|
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 | **1**   | 0.655     | **0.664**   | 0.503       | 0.617        | 0.000   | 0.574     |
 | **2**   | 0.554     | 0.548       | **0.567**   | 0.549        | 0.518   | 0.551     |
 | **3**   | 0.492     | **0.568**   | 0.434       | 0.453        | 0.070   | 0.454     |
@@ -521,7 +559,7 @@ below summarizes the recall scores for the selected models, and marks
 the best score for each class in bold:
 
 | Class   | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca   | gbm_smote |
-|---------|-----------|-------------|-------------|--------------|-----------|-----------|
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 | **1**   | 0.548     | 0.526       | **0.719**   | 0.526        | 0.000     | 0.519     |
 | **2**   | 0.760     | 0.879       | 0.295       | 0.671        | **0.884** | 0.584     |
 | **3**   | 0.250     | 0.096       | **0.662**   | 0.331        | 0.019     | 0.435     |
@@ -552,7 +590,7 @@ the selected models and the best performing model for each class marked
 in bold:
 
 | Class   | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
-|---------|-----------|-------------|-------------|--------------|---------|-----------|
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 | **1**   | **0.597** | 0.587       | 0.591       | 0.568        | NA      | 0.545     |
 | **2**   | 0.641     | **0.675**   | 0.387       | 0.603        | 0.653   | 0.567     |
 | **3**   | 0.332     | 0.164       | **0.423**   | 0.382        | 0.030   | 0.444     |
@@ -578,7 +616,7 @@ performance. The table below presents the AUC-ROC scores for the
 selected models:
 
 | Metric | rf_onehot | rf_filtered | rf_weighted | gbm_filtered | gbm_pca | gbm_smote |
-|----|----|----|----|----|----|----|
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 | AUC multiclass | 0.436 | 0.432 | 0.423 | 0.443 | 0.342 | **0.444** |
 
 The AUC-ROC scores show that the `gbm_smote` model performs best, with
@@ -618,15 +656,15 @@ we evaluated, though there is still room for improvement.
 The K-Means clustering algorithm was applied to the `numeric` dataset to
 identify natural groupings within the data. We used the `elbow` and
 `silhouette` methods to determine the optimal number of clusters. The
-results are summarized below:
--  **Elbow Method:** The elbow method did not give us any valuable insights
-on the number of clusters, as the plot did not show a clear inflection.
--  **Silhouette Method:** The silhouette method suggested that the optimal
-number of clusters is 2, with a silhouette score of ~0.25.
+results are summarized below: - **Elbow Method:** The elbow method did
+not give us any valuable insights on the number of clusters, as the plot
+did not show a clear inflection. - **Silhouette Method:** The silhouette
+method suggested that the optimal number of clusters is 2, with a
+silhouette score of \~0.25.
 
 <div>
 
-<center>![](../docs/images/elbow k-means.png)</center>
+<center>![](../docs/images/elbow%20k-means.png)</center>
 
 </div>
 
@@ -640,21 +678,22 @@ number of clusters is 2, with a silhouette score of ~0.25.
 
 <div>
 
-<center>![](../docs/images/silhouette k-means.png)</center>
+<center>![](../docs/images/silhouette%20k-means.png)</center>
 
 </div>
 
 <div>
 
-<center><b>Figure 3:</b> Silhouette method for K-Means clustering</center>
+<center><b>Figure 3:</b> Silhouette method for K-Means
+clustering</center>
 
 </div>
 
-With this information we procceded to plot the data using the parallel 
+With this information we procceded to plot the data using the parallel
 coordinates plot, which allowed us to visualize the clusters and their
-distribution. The plot did not showed any clear difference, as most features
-were binary and those which weren't did not show any clear pattern or 
-difference in value distribution.
+distribution. The plot did not showed any clear difference, as most
+features were binary and those which weren't did not show any clear
+pattern or difference in value distribution.
 
 <div>
 
@@ -664,18 +703,20 @@ difference in value distribution.
 
 <div>
 
-<center><b>Figure 4:</b> Parallel coordinates plot for K-Means clusters</center>
+<center><b>Figure 4:</b> Parallel coordinates plot for K-Means
+clusters</center>
 
 </div>
 
 #### Hierarchical Clustering
 
-With this in mind we decided to look for finer-grained clusters using the
-hierarchical clustering algorithm, with the goal of finding more detailed
-patterns in the data. We used two methods: `ward.D2` and `complete`, and plotted
-the dendrograms for both. The results were very close to non-informative. Both
-finished with a very large cluster and a significantly smaller one and there did
-not seem to be any patters on the data once more.
+With this in mind we decided to look for finer-grained clusters using
+the hierarchical clustering algorithm, with the goal of finding more
+detailed patterns in the data. We used two methods: `ward.D2` and
+`complete`, and plotted the dendrograms for both. The results were very
+close to non-informative. Both finished with a very large cluster and a
+significantly smaller one and there did not seem to be any patters on
+the data once more.
 
 <div>
 
@@ -685,28 +726,30 @@ not seem to be any patters on the data once more.
 
 <div>
 
-<center><b>Figure 5:</b> Dendogram for `complete` hierarchical clustering method</center>
+<center><b>Figure 5:</b> Dendogram for `complete` hierarchical
+clustering method</center>
 
 </div>
 
-After this we decided to move on to the dimensionality reduction techniques
-as to extract patters with more complex techniques which may not be able to
-be extracted with traditional clustering techniques. These techniques would
-also allow us to visualize the data in lower dimensions, which would be
-useful for interpretation.
+After this we decided to move on to the dimensionality reduction
+techniques as to extract patters with more complex techniques which may
+not be able to be extracted with traditional clustering techniques.
+These techniques would also allow us to visualize the data in lower
+dimensions, which would be useful for interpretation.
 
 #### Autoencoder
 
-We applied the autoencoder to the `onehot` dataset to reduce the dimensions
-from 43 to 8. The autoencoder was trained for 100 epochs, and the loss
-decreased steadily over time, indicating that the model was learning the
-underlying structure of the data. As we obtained very promising results, we 
-decided to apply again the autoencoder to reduce the dimensions to 3, and
-then plot it in three dimensions. The results showed two clearly distinct
-clusters, which after colouring with the data of the `damage_grade` column,
-showed one of the clusters mostly corresponding to buildings with `damage_grade`
-equal to 1, and the other group being more noisy with no clear differentiation
-of properties between building with `damage_grade` equal to 2 and 3.
+We applied the autoencoder to the `onehot` dataset to reduce the
+dimensions from 43 to 8. The autoencoder was trained for 100 epochs, and
+the loss decreased steadily over time, indicating that the model was
+learning the underlying structure of the data. As we obtained very
+promising results, we decided to apply again the autoencoder to reduce
+the dimensions to 3, and then plot it in three dimensions. The results
+showed two clearly distinct clusters, which after colouring with the
+data of the `damage_grade` column, showed one of the clusters mostly
+corresponding to buildings with `damage_grade` equal to 1, and the other
+group being more noisy with no clear differentiation of properties
+between building with `damage_grade` equal to 2 and 3.
 
 <div>
 
@@ -716,7 +759,8 @@ of properties between building with `damage_grade` equal to 2 and 3.
 
 <div>
 
-<center><b>Figure 6:</b> Autoencoder performance during training</center>
+<center><b>Figure 6:</b> Autoencoder performance during
+training</center>
 
 </div>
 
@@ -739,10 +783,11 @@ of properties between building with `damage_grade` equal to 2 and 3.
 After that, we tried with the t-SNE technique, which is a non-linear
 dimensionality reduction technique that maps high-dimensional data to a
 lower-dimensional space while preserving local relationships. We applied
-t-SNE to the `onehot` dataset to reduce the dimensions to 3 and visualize
-the data in a lower-dimensional space. The results showed a more complex
-distribution of the data, but this time it did show clear separation between
-clusters, which were not related to the `damage_grade` variable.
+t-SNE to the `onehot` dataset to reduce the dimensions to 3 and
+visualize the data in a lower-dimensional space. The results showed a
+more complex distribution of the data, but this time it did show clear
+separation between clusters, which were not related to the
+`damage_grade` variable.
 
 <div>
 
@@ -758,14 +803,15 @@ clusters, which were not related to the `damage_grade` variable.
 
 #### K-Means over 3 dimensions
 
-After dimensionality reduction, we applied the K-Means clustering algorithm
-to the datasets generated by the autoencoder, t-Sne and PCA techniques. We 
-again applied the elbow and silhouette methods to determine the optimal number
-of clusters for each dataset. Finding once more for the autoencoder and PCA
-datasets that the optimal number of clusters was 2, and for the t-SNE dataset
-we found the optimal number to be 11, which reafirms the idea that the t-SNE
-is giving us patterns that are not related to the target variable. We will
-discuss these implications further in the document.
+After dimensionality reduction, we applied the K-Means clustering
+algorithm to the datasets generated by the autoencoder, t-Sne and PCA
+techniques. We again applied the elbow and silhouette methods to
+determine the optimal number of clusters for each dataset. Finding once
+more for the autoencoder and PCA datasets that the optimal number of
+clusters was 2, and for the t-SNE dataset we found the optimal number to
+be 11, which reafirms the idea that the t-SNE is giving us patterns that
+are not related to the target variable. We will discuss these
+implications further in the document.
 
 <div>
 
@@ -796,10 +842,11 @@ dimensions)</center>
 
 #### DB-Scan
 
-Lastly, we applied the DB-Scan clustering algorithm to the autoencoder and
-t-SNE datasets. We used the elbow method to find the optimal `eps` value for
-each dataset. We found that for the autoencoder dataset there were no clear
-clusters, but for the t-SNE dataset we found 13 clusters and several outliers.
+Lastly, we applied the DB-Scan clustering algorithm to the autoencoder
+and t-SNE datasets. We used the elbow method to find the optimal `eps`
+value for each dataset. We found that for the autoencoder dataset there
+were no clear clusters, but for the t-SNE dataset we found 13 clusters
+and several outliers.
 
 <div>
 
@@ -815,26 +862,53 @@ clusters, but for the t-SNE dataset we found 13 clusters and several outliers.
 
 ## Discussion
 
-*Conclusions that can be drawn from the results* (1.5 points)
+The data presented challenges related to its interpretability,
+variability, and balance, which significantly impacted the predictive
+modeling results. A critical limitation was the low interpretability of
+categorical features, such as those encoded with single characters,
+which hindered the ability to extract meaningful patterns and
+relationships. Furthermore, low variability in some features limited the
+model’s capacity to generalize and differentiate between the damage
+grades effectively. Combined with an unbalanced class distribution, the
+models struggled to achieve consistent accuracy across all categories,
+particularly for damage grades 2 and 3.
 
-
-The data presented challenges related to its interpretability, variability, and balance, which significantly impacted the predictive modeling results. A critical limitation was the low interpretability of categorical features, such as those encoded with single characters, which hindered the ability to extract meaningful patterns and relationships. Furthermore, low variability in some features limited the model’s capacity to generalize and differentiate between the damage grades effectively. Combined with an unbalanced class distribution, the models struggled to achieve consistent accuracy across all categories, particularly for damage grades 2 and 3.
-
-Dimensionality reduction techniques, including PCA, autoencoders, and t-SNE, were explored to identify latent patterns and simplify data representation. While these methods revealed clusters, especially through t-SNE, these clusters were not strongly correlated with the target variable, suggesting a lack of granularity or completeness in the dataset. For instance, crucial data points such as the distance from the earthquake epicenter, adjacent structures, and other environmental factors were missing, limiting the depth of analysis. Additionally, the arbitrary selection of damage grade 2 and 3 instances, potentially to increase challenge complexity in the ML Olympiad, may have introduced random noise, further reducing predictive accuracy.
+Dimensionality reduction techniques, including PCA, autoencoders, and
+t-SNE, were explored to identify latent patterns and simplify data
+representation. While these methods revealed clusters, especially
+through t-SNE, these clusters were not strongly correlated with the
+target variable, suggesting a lack of granularity or completeness in the
+dataset. For instance, crucial data points such as the distance from the
+earthquake epicenter, adjacent structures, and other environmental
+factors were missing, limiting the depth of analysis. Additionally, the
+arbitrary selection of damage grade 2 and 3 instances, potentially to
+increase challenge complexity in the ML Olympiad, may have introduced
+random noise, further reducing predictive accuracy.
 
 # Conclusions
 
-*A brief paragraph that "dialogues" with the initial summary* (0.5
-points)
+This study underscores significant limitations and insights into the
+dataset and its influence on modeling earthquake damage to buildings.
+The data's low interpretability and variability, coupled with its
+unbalanced distribution, created challenges for extracting meaningful
+relationships, particularly between damage grades 2 and 3. Despite
+employing advanced preprocessing and analysis techniques, the lack of
+distinctive patterns between these grades limited the models' predictive
+effectiveness. Dimensionality reduction and clustering methods offered
+some insight but failed to provide robust segmentation tied to the
+target variables.
 
-This study underscores significant limitations and insights into the dataset and its influence on modeling earthquake damage to buildings. The data's low interpretability and variability, coupled with its unbalanced distribution, created challenges for extracting meaningful relationships, particularly between damage grades 2 and 3. Despite employing advanced preprocessing and analysis techniques, the lack of distinctive patterns between these grades limited the models' predictive effectiveness. Dimensionality reduction and clustering methods offered some insight but failed to provide robust segmentation tied to the target variables.
-
-Future improvements should focus on collecting and integrating additional, highly relevant features, such as geographical data, surrounding building characteristics, and other environmental attributes, to enhance the granularity of the dataset. Furthermore, a detailed review of the data preparation process to avoid arbitrary selection biases could yield more representative distributions. While current findings highlight the limitations, they also pave the way for more robust, feature-rich datasets that can better predict building resilience in seismic events.
+Future improvements should focus on collecting and integrating
+additional, highly relevant features, such as geographical data,
+surrounding building characteristics, and other environmental
+attributes, to enhance the granularity of the dataset. Furthermore, a
+detailed review of the data preparation process to avoid arbitrary
+selection biases could yield more representative distributions. While
+current findings highlight the limitations, they also pave the way for
+more robust, feature-rich datasets that can better predict building
+resilience in seismic events.
 
 # Outstanding tasks
-
-*Deep dive into topics or techniques not covered in class (e.g.,
-filters, wrappers, etc.)* (3 points)
 
 ## Kaiser Criterion
 
@@ -939,15 +1013,43 @@ functionalities:
 
 ## Autoencoder
 
-The autoencoder is a type of artificial neural network used for unsupervised learning, particularly for dimensionality reduction. It consists of two main parts: the encoder, which compresses the input data into a lower-dimensional representation, and the decoder, which reconstructs the original data from this compressed form. This technique is valuable because it allows for the extraction of meaningful features from high-dimensional data while minimizing information loss.
+The autoencoder is a type of artificial neural network used for
+unsupervised learning, particularly for dimensionality reduction. It
+consists of two main parts: the encoder, which compresses the input data
+into a lower-dimensional representation, and the decoder, which
+reconstructs the original data from this compressed form. This technique
+is valuable because it allows for the extraction of meaningful features
+from high-dimensional data while minimizing information loss.
 
-In our analysis, we applied the autoencoder to the onehot dataset, reducing its dimensionality from 43 to 8. This reduction was achieved with minimal loss of information, making it easier to visualize and analyze the data. Furthermore, we explored reducing the dataset to 3 dimensions, which facilitated the application of clustering algorithms. The results indicated that the autoencoder effectively captured the underlying structure of the data, revealing clusters that corresponded to different damage grades.
+In our analysis, we applied the autoencoder to the onehot dataset,
+reducing its dimensionality from 43 to 8. This reduction was achieved
+with minimal loss of information, making it easier to visualize and
+analyze the data. Furthermore, we explored reducing the dataset to 3
+dimensions, which facilitated the application of clustering algorithms.
+The results indicated that the autoencoder effectively captured the
+underlying structure of the data, revealing clusters that corresponded
+to different damage grades.
 
 ## TSNE
 
-t-SNE (t-distributed Stochastic Neighbor Embedding) is a powerful non-linear dimensionality reduction technique particularly suited for visualizing high-dimensional datasets. It works by converting similarities between data points into joint probabilities and then minimizing the divergence between these probabilities in the high-dimensional space and the lower-dimensional representation. This method is especially valuable for visualizing complex datasets, as it preserves local structures and reveals clusters that may not be apparent in the original high-dimensional space.
+t-SNE (t-distributed Stochastic Neighbor Embedding) is a powerful
+non-linear dimensionality reduction technique particularly suited for
+visualizing high-dimensional datasets. It works by converting
+similarities between data points into joint probabilities and then
+minimizing the divergence between these probabilities in the
+high-dimensional space and the lower-dimensional representation. This
+method is especially valuable for visualizing complex datasets, as it
+preserves local structures and reveals clusters that may not be apparent
+in the original high-dimensional space.
 
-In our study, we applied t-SNE to the onehot dataset to reduce its dimensions to 3, allowing for effective visualization of the data. The resulting plots demonstrated a complex distribution with several clusters; however, these clusters did not correlate with the damage_grade variable contrary to the other techniques applied. This finding suggests that t-SNE is to be applied on different contexts to other dimensionality reduction techniques and may be used in parallel to extract additional insights from the data.
+In our study, we applied t-SNE to the onehot dataset to reduce its
+dimensions to 3, allowing for effective visualization of the data. The
+resulting plots demonstrated a complex distribution with several
+clusters; however, these clusters did not correlate with the
+damage_grade variable contrary to the other techniques applied. This
+finding suggests that t-SNE is to be applied on different contexts to
+other dimensionality reduction techniques and may be used in parallel to
+extract additional insights from the data.
 
 # Bibliography
 
