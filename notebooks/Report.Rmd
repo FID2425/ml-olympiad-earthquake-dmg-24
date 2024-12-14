@@ -103,7 +103,19 @@ potentially valuable information for the predictive task.
 Next step was to check the consistency of the data. We tried first to
 identify missing values and potential inconsistencies that could affect
 the quality of the predictive model. The dataset was found to be
-relatively clean, with no missing values in the columns.
+relatively clean, with no missing values in the columns as shown in Figure 1.
+
+<div>
+
+<center>![](../docs/images/datadist.png)</center>
+
+</div>
+
+<div>
+
+<center><b>Figure 1:</b> Data distribution.</center>
+
+</div>
 
 #### 3. Data visualization
 
@@ -126,14 +138,66 @@ buildings with a larger area than others. We did however infer that
 since the height of the buildings was mostly the same, that would mean
 that most buildings were either houses or small buildings.
 
+<div>
+
+<center>![](../docs/images/boxplot.png)</center>
+
+</div>
+
+<div>
+
+<center><b>Figure 2:</b> Height and Area percentage data distribution</center>
+
+</div>
+
 Next we analyzed the other numerical features, which were `age`,
 `count_floors_pre_eq`, `count_families`. And as we suspected, most
 buildings were residential houses, as the majority, with a familiy or
-two at most, rarely more that that. We also found that most buildings
-were registered as being 0 years since construction, and there was also
-a spike at 30 years since construction, which could mean that wither
+two at most (Figure 5), rarely more that that. We also found that most
+buildings were registered as being 0 years since construction, and there 
+was also a spike at 30 years since construction, which could mean that wither
 there was a boom in construction 30 years ago, or that the data was not
 properly recorded.
+
+<div>
+
+<center>![](../docs/images/agehist.png)</center>
+
+</div>
+
+<div>
+
+<center><b>Figure 3:</b> Building age histogram</center>
+
+</div>
+
+</hr>
+
+<div>
+
+<center>![](../docs/images/floorshist.png)</center>
+
+</div>
+
+<div>
+
+<center><b>Figure 4:</b> Building floors histogram</center>
+
+</div>
+
+</hr>
+
+<div>
+
+<center>![](../docs/images/familycounthist.png)</center>
+
+</div>
+
+<div>
+
+<center><b>Figure 5:</b> Building family count histogram</center>
+
+</div>
 
 When it comes to the categorical features, we found that there was a lot
 of redundant data, for example, `plan_configuration` or
@@ -142,10 +206,22 @@ same, with one value being the majority, and the set of
 `secondary_use_X` also had a low value distribution, with most not
 having any secondary use, which does fit with our hypothesis of most
 buildings being residential houses. On the same line of categorical
-features we tried to extract any realtion or meaning behind
+features we tried to extract any relation or meaning behind
 `surface_condition` and `position`, but we couldn't find any, as the
 values were mostly single characters and thus not very explanatory and
 there did not seem to be much correlation at first sight.
+
+<div>
+
+<center>![](../docs/images/secondusehist.png)</center>
+
+</div>
+
+<div>
+
+<center><b>Figure 6:</b> Buildings secondary use data distribution</center>
+
+</div>
 
 #### 4. Data Correlation
 
@@ -166,6 +242,18 @@ roof types are more resistant to earthquakes. -
 `has_superstructure_rc_engineered` (-0.259): We can infer that the
 superstructure material is a significant factor in the damage grade,
 which is expected as some materials are more resistant to earthquakes.
+
+<div>
+
+<center>![](../docs/images/datacorr.png)</center>
+
+</div>
+
+<div>
+
+<center><b>Figure 7:</b> Data correlation</center>
+
+</div>
 
 #### 5. Further Analysis
 
@@ -449,37 +537,15 @@ autoencoder and the `Rtsne` library for the t-SNE. We have also used the
 
 #### Implementation
 
-We first aplied the `k-means` and `hierarchical` clustering algorithms
-with the `numeric` dataset. Having no clear conclusions or patterns
-identified after the clustering, we decided follow upwith dimensionality
-reduction techniques. We have applied the `autoencoder` to reduce the
-`onehot` dataset from 43 to 8 dimensions with minimal loss of
-information.
-
-We have also applied an `autoencoder` to reduce it to 3 dimensions, and
-we have compared the results with the `pca` and `t-sne` techniques. We
-tried to visualize if there was any pattern in the data related to the
-target variable `damage_grade`. For `t-sne` no clear pattern was found,
-but for `pca` and `autoencoder` we found that buildings with
-`damage_grade` 1 were mostly separated from `damage_grade` 2 and 3.
-
-Then, we run the `k-means` clustering algorithms with the `autoencoder`,
-`pca` and `t-sne` datasets. We have used the `elbow` and `silhouette`
-methods to find the optimal number of clusters. We have found that the
-optimal number of clusters is 2 for the `autoencoder` and `pca`
-datasets, and 11 for the `t-sne` dataset. For the `pca` dataset we can
-see that the clusters kind of separate the buildings for `damage_grade`
-1 from the rest, but for the `autoencoder` dataset the clusters are not
-as clear. For the `t-sne` dataset we can see that the clusters are not
-related to the `damage_grade` variable, giving us the idea that the
-`t-sne` is giving us patterns that are not related to the target
-variable.
+We have implemented the unsupervised analysis using the `cluster`, `dbscan`
+libraries for clustering, the `keras` library for the autoencoder and the `Rtsne` library for the t-SNE. We have also used the `factoextra`, `mass`
+and `plotly` libraries for the visualization.
 
 #### In-depth analysis
 
-We first aplied the `k-means` and `hierarchical` clustering algorithms
+We first applied the `k-means` and `hierarchical` clustering algorithms
 with the `numeric` dataset. Having no clear conclusions or patterns
-identified after the clustering, we decided follow upwith dimensionality
+identified after the clustering, we decided follow up with dimensionality
 reduction techniques. We have applied the `autoencoder` to reduce the
 `onehot` dataset from 43 to 8 dimensions with minimal loss of
 information.
@@ -504,11 +570,14 @@ related to the `damage_grade` variable, giving us the idea that the
 `t-sne` is giving us patterns that are not related to the target
 variable.
 
-Lastly, we runed `db-scan` clustering algorithm with the `autoencoder`
+Lastly, we ran `db-scan` clustering algorithm with the `autoencoder`
 and `t-sne` datasets. We have used the `elbow` methods to find the
 optimal `eps` value. We have found no clear clusters for the
 `autoencoder` dataset, but for the `t-sne` dataset we have found 14
 clusters that are not related to the `damage_grade` variable.
+
+The results of the unsupervised analysis are presented in section
+[unsupervised analysis II]{#unsupervised-analysis-2}.
 
 ## Analysis II
 
@@ -636,12 +705,12 @@ highest discriminatory power.
 
 <div>
 
-<center><b>Figure 1:</b> AUC-ROC Curve for the `gbm_smote`
+<center><b>Figure 8:</b> AUC-ROC Curve for the `gbm_smote`
 model.</center>
 
 </div>
 
-As shown in Figure 1, while the AUC is relatively close to 0.5, it
+As shown in Figure 8, while the AUC is relatively close to 0.5, it
 suggests that our model has some discriminatory power, but it is not
 highly effective at separating the classes. The MCP curve rises steadily
 without sharp increases, indicating that our model's predictions are
@@ -649,7 +718,7 @@ only moderately better than random guessing. This AUC score reflects the
 performance of the `gbm_smote` model as one of the best among the models
 we evaluated, though there is still room for improvement.
 
-### Unsupervised Analysis Results
+### Unsupervised Analysis Results {#unsupervised-analysis-2}
 
 #### K-Means Clustering
 
@@ -670,7 +739,7 @@ silhouette score of \~0.25.
 
 <div>
 
-<center><b>Figure 2:</b> Elbow method for K-Means clustering</center>
+<center><b>Figure 9:</b> Elbow method for K-Means clustering</center>
 
 </div>
 
@@ -684,7 +753,7 @@ silhouette score of \~0.25.
 
 <div>
 
-<center><b>Figure 3:</b> Silhouette method for K-Means
+<center><b>Figure 10:</b> Silhouette method for K-Means
 clustering</center>
 
 </div>
@@ -703,7 +772,7 @@ pattern or difference in value distribution.
 
 <div>
 
-<center><b>Figure 4:</b> Parallel coordinates plot for K-Means
+<center><b>Figure 11:</b> Parallel coordinates plot for K-Means
 clusters</center>
 
 </div>
@@ -726,7 +795,7 @@ the data once more.
 
 <div>
 
-<center><b>Figure 5:</b> Dendogram for `complete` hierarchical
+<center><b>Figure 12:</b> Dendogram for `complete` hierarchical
 clustering method</center>
 
 </div>
@@ -759,7 +828,7 @@ between building with `damage_grade` equal to 2 and 3.
 
 <div>
 
-<center><b>Figure 6:</b> Autoencoder performance during
+<center><b>Figure 13:</b> Autoencoder performance during
 training</center>
 
 </div>
@@ -774,7 +843,7 @@ training</center>
 
 <div>
 
-<center><b>Figure 7:</b> Encoded data plotted in 3D</center>
+<center><b>Figure 14:</b> Encoded data plotted in 3D</center>
 
 </div>
 
@@ -797,7 +866,7 @@ separation between clusters, which were not related to the
 
 <div>
 
-<center><b>Figure 8:</b> Tsne data plotted in 3D</center>
+<center><b>Figure 15:</b> Tsne data plotted in 3D</center>
 
 </div>
 
@@ -821,7 +890,7 @@ implications further in the document.
 
 <div>
 
-<center><b>Figure 9:</b> Clusters for the PCA dataset (first 3
+<center><b>Figure 16:</b> Clusters for the PCA dataset (first 3
 dimensions)</center>
 
 </div>
@@ -836,7 +905,7 @@ dimensions)</center>
 
 <div>
 
-<center><b>Figure 10:</b> t-Sne clusters obtained with K-Means</center>
+<center><b>Figure 17:</b> t-Sne clusters obtained with K-Means</center>
 
 </div>
 
@@ -856,7 +925,7 @@ and several outliers.
 
 <div>
 
-<center><b>Figure 11:</b> t-Sne clusters obtained with DB-Scan</center>
+<center><b>Figure 18:</b> t-Sne clusters obtained with DB-Scan</center>
 
 </div>
 
