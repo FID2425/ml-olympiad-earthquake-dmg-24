@@ -1,0 +1,1112 @@
+# 03.02. Supervised Learning
+
+In this notebook, we will apply different classification algorithms to the different datasets we have obtained during preprocessing. The main goal is to find the best model for each dataset.
+
+We will use the following datasets:
+  - `onehot_train.csv`
+  - `filtered_onehot_train.csv`
+  - `pca_train.csv`
+  - `smote_train.csv`
+  - `weighted_train.csv`
+
+We will using some test datasets to evaluate the models:
+  - `onehot_test.csv`: this will be used for the models generated with `onehot_train.csv`.
+  - `filtered_onehot_test.csv`: this will be used for the models generated with `filtered_onehot_train.csv`, `smote_train.csv` and `weighted_train.csv`.
+  - `pca_test.csv`: this will be used for the models generated with `pca_train.csv`.
+
+We will use the following classification algorithms:
+ - Random Forest (ranger).
+ - Gradient Boosting Machines (xgbTree).
+ - Stochastic Gradient Boosting (gbm).
+ 
+We will use the following metrics to evaluate the models:
+ - Confusion Matrix.
+ - ROC and AUC Multiclass Curves.
+ 
+## Functions
+
+We will define some functions to help us evaluate the models.
+
+First, we will load the libraries we will use.
+
+```{r}
+library(tidyverse)
+library(caret)
+library(pROC)
+library(ggplot2)
+library(xgboost)
+library(reticulate)
+# use_condaenv("arm64_py39", required = TRUE) # For MacOS M1
+py_config()
+```
+
+The following function will be used to apply the classification algorithms to the datasets. It will train the model, save it, predict the test data, save the predictions, and return the trained model.
+
+```{r}
+apply_algorithm <- function(algorithm, tuneGrid, train_data, test_data, model_path, predictions_path, use_weights = FALSE) {
+  # Record start time
+  start_time <- Sys.time()
+  
+  # Convert the target column to a factor
+  train_data$damage_grade <- as.factor(train_data$damage_grade)
+  levels(train_data$damage_grade) <- make.names(levels(train_data$damage_grade))
+  
+  # Check if weights should be used
+  weights <- NULL
+  if (use_weights && "weights" %in% colnames(train_data)) {
+    weights <- train_data$weights
+  }
+  
+  # Train the model
+  set.seed(123)
+  model <- train(
+    x = train_data %>% select(-damage_grade, -weights), # Exclude damage_grade and weights
+    y = train_data$damage_grade,
+    method = algorithm,
+    trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE, classProbs = TRUE),
+    tuneGrid = tuneGrid,
+    weights = weights # Pass weights if available
+  )
+  
+  # Save the model
+  save(model, file = model_path)
+  
+  # Prepare the test data
+  test_data$damage_grade <- as.factor(test_data$damage_grade)
+  levels(test_data$damage_grade) <- levels(train_data$damage_grade) # Ensure levels match training data
+  
+  # Predict the test data
+  test_data$damage_grade_pred <- predict(model, newdata = test_data)
+  
+  # Predict with probabilities
+  test_data$probabilities <- predict(model, newdata = test_data, type = "prob")
+  
+  # Save the predictions
+  write.csv(test_data, predictions_path, row.names = FALSE)
+  
+  # Record end time
+  end_time <- Sys.time()
+  
+  # Calculate total execution time
+  total_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  minutes <- floor(total_time / 60)
+  seconds <- round(total_time %% 60)
+  cat("Total execution time:", minutes, "minute(s) and", seconds, "second(s).\n")
+  
+  # Return the trained model
+  return(model)
+}
+
+```
+
+The following function will be used to calculate the confusion matrix and other metrics.
+
+The confusion matrix is a table that is often used to describe the performance of a classification model on a set of test data for which the true values are known. It allows the visualization of the performance of an algorithm.
+
+```{r}
+get_prediction_metrics <- function(original_data, predicted_data) {
+  # Convert the 'damage_grade' column to a factor
+  original_data$damage_grade <- factor(original_data$damage_grade, levels = c("1", "2", "3"))
+  
+  # Convert the 'damage_grade_pred' column to a factor
+  predicted_data$damage_grade_pred <- factor(predicted_data$damage_grade_pred, levels = c("X1", "X2", "X3"), labels = c("1", "2", "3"))
+  
+  # Calculate confusion matrix
+  confusion <- confusionMatrix(data = predicted_data$damage_grade_pred, reference = original_data$damage_grade, mode = "everything")
+  
+  # Get other metrics in a table
+  metrics_table <- as.data.frame(confusion$byClass)
+  
+  # Return the confusion matrix and metrics table
+  return(list(confusion = confusion, metrics_table = metrics_table))
+}
+```
+
+The following function will be used to calculate the ROC and AUC Multiclass Curves.
+
+The ROC curve is a graphical plot that illustrates the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The ROC curve is created by plotting the true positive rate (TPR) against the false positive rate (FPR) at various threshold settings.
+
+The AUC is the area under the ROC curve. AUC provides an aggregate measure of performance across all possible classification thresholds.
+
+```{r}
+get_AUC_and_plot <- function(original_data, predicted_data, output_plot_path) {
+  
+  plot_loc <- "../results/supervised/plots/"
+  output_plot_path_complete <- paste0(plot_loc, output_plot_path)
+  
+  
+  predicted_data <- predicted_data[, c("damage_grade_pred", "probabilities.X1", "probabilities.X2", "probabilities.X3")]
+  
+  # Save the original and predicted data to CSV files
+  original_data_path <- normalizePath(tempfile(fileext = ".csv"), winslash = "/")
+  predicted_data_path <- normalizePath(tempfile(fileext = ".csv"), winslash = "/")
+  
+  write.csv(original_data, original_data_path, row.names = FALSE)
+  write.csv(predicted_data, predicted_data_path, row.names = FALSE)
+  
+  python_script_path <- "../scripts/auc.py"
+  
+  # Run the Python script using reticulate
+  py_run_string(paste0(
+    "import sys; sys.argv = ['",
+    python_script_path, "', '",
+    original_data_path, "', '",
+    predicted_data_path, "', '",
+    output_plot_path_complete, "']"
+  ))
+  py_run_file(python_script_path)
+  
+  # Read the AUC from the output file
+  area <- py$area
+  
+  # Return the AUC
+  list(auc = area, plot_path = output_plot_path)
+}
+```
+
+## Onehot Dataset
+
+We will load the `onehot_train.csv` and `onehot_test.csv` datasets and apply the classification algorithms to them.
+
+```{r}
+# Load the dataset
+onehot_train <- read.csv("../data/processed/train/onehot_train.csv")
+
+# Load the test dataset
+onehot_test <- read.csv("../data/processed/test/onehot_test.csv")
+
+```
+
+### Random Forest
+
+This method is a combination of tree predictors such that each tree depends on the values of a random vector sampled independently and with the same distribution for all trees in the forest. Ranger is a fast implementation of Random Forest for high-dimensional data.
+
+Tuning parameters:
+- `mtry` (#Randomly Selected Predictors)
+- `splitrule` (Splitting Rule)
+- `min.node.size` (Minimal Node Size)
+
+```{r}
+# Define the tuning grid
+rf_onehot_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+                        .splitrule = "gini",
+                        .min.node.size = c(1, 5, 10, 15, 20))
+
+# Define the model and predictions paths
+rf_onehot_model_path <- "../models/rf_onehot_model.RData"
+rf_onehot_predictions_path <- "../data/predictions/rf_onehot_predictions.csv"
+
+# Apply the algorithm
+rf_onehot_model <- apply_algorithm("ranger", rf_onehot_tuneGrid, onehot_train, onehot_test, rf_onehot_model_path, rf_onehot_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+rf_onehot_predictions <- read.csv(rf_onehot_predictions_path)
+
+# Get the metrics
+rf_onehot_metrics <- get_prediction_metrics(onehot_test, rf_onehot_predictions)
+rf_onehot_metrics$confusion
+rf_onehot_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+rf_onehot_auc <- get_AUC_and_plot(onehot_test, rf_onehot_predictions, "rf_onehot_auc.png")
+```
+
+### Gradient Boosting Machines
+
+Gradient boosting is a machine learning technique for regression and classification problems, which produces a prediction model in the form of an ensemble of weak prediction models, typically decision trees.
+
+Tuning parameters:
+
+- `nrounds` (# Boosting Iterations)
+- `max_depth` (Max Tree Depth)
+- `eta` (Shrinkage)
+- `gamma` (Minimum Loss Reduction)
+- `colsample_bytree` (Subsample Ratio of Columns)
+- `min_child_weight` (Minimum Sum of Instance Weight)
+- `subsample` (Subsample Percentage)
+
+```{r}
+# Define the tuning grid
+gbm_onehot_tuneGrid <- expand.grid(
+  .nrounds = c(50, 100),              
+  .max_depth = c(3, 4),                
+  .eta = c(0.1, 0.3),                  
+  .gamma = c(0, 0.1),                  
+  .colsample_bytree = c(0.7, 0.9),     
+  .min_child_weight = c(1, 3),         
+  .subsample = c(0.7, 0.9)             
+)
+
+# Define the model and predictions paths
+gbm_onehot_model_path <- "../models/gbm_onehot_model.RData"
+gbm_onehot_predictions_path <- "../data/predictions/gbm_onehot_predictions.csv"
+
+# Apply the algorithm
+gbm_onehot_model <- apply_algorithm("xgbTree", gbm_onehot_tuneGrid, onehot_train, onehot_test, gbm_onehot_model_path, gbm_onehot_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+gbm_onehot_predictions <- read.csv(gbm_onehot_predictions_path)
+
+# Get the metrics
+gbm_onehot_metrics <- get_prediction_metrics(onehot_test, gbm_onehot_predictions)
+gbm_onehot_metrics$confusion
+gbm_onehot_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+gbm_onehot_auc <- get_AUC_and_plot(onehot_test, gbm_onehot_predictions, "gbm_onehot_auc.png")
+```
+
+### Stochastic Gradient Boosting
+
+Stochastic Gradient Boosting (SGB) is a generalization of boosting to arbitrary differentiable loss functions. It is particularly useful for classification problems.
+
+Tuning parameters:
+
+- `n.trees` (# Boosting Iterations)
+- `interaction.depth` (Max Tree Depth)
+- `shrinkage` (Shrinkage)
+- `n.minobsinnode` (Min. Terminal Node Size)
+
+```{r}
+# Define the tuning grid
+sgb_onehot_tuneGrid <- expand.grid(
+  .n.trees = c(50, 100),              
+  .interaction.depth = c(3, 4),       
+  .shrinkage = c(0.1, 0.3),           
+  .n.minobsinnode = c(10, 20)         
+)
+
+# Define the model and predictions paths
+sgb_onehot_model_path <- "../models/sgb_onehot_model.RData"
+sgb_onehot_predictions_path <- "../data/predictions/sgb_onehot_predictions.csv"
+
+# Apply the algorithm
+sgb_onehot_model <- apply_algorithm("gbm", sgb_onehot_tuneGrid, onehot_train, onehot_test, sgb_onehot_model_path, sgb_onehot_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+sgb_onehot_predictions <- read.csv(sgb_onehot_predictions_path)
+
+# Get the metrics
+sgb_onehot_metrics <- get_prediction_metrics(onehot_test, sgb_onehot_predictions)
+sgb_onehot_metrics$confusion
+sgb_onehot_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+sgb_onehot_auc <- get_AUC_and_plot(onehot_test, sgb_onehot_predictions, "sgb_onehot_auc.png")
+```
+
+## Filtered Onehot Dataset
+
+We will load the `filtered_onehot_train.csv` and `filtered_onehot_test.csv` datasets and apply the classification algorithms to them.
+
+```{r}
+# Load the dataset
+filtered_onehot_train <- read.csv("../data/processed/train/filtered_onehot_train.csv")
+
+# Load the test dataset
+filtered_onehot_test <- read.csv("../data/processed/test/filtered_onehot_test.csv")
+```
+
+### Random Forest
+
+This method is a combination of tree predictors such that each tree depends on the values of a random vector sampled independently and with the same distribution for all trees in the forest. Ranger is a fast implementation of Random Forest for high-dimensional data.
+
+Tuning parameters:
+- `mtry` (#Randomly Selected Predictors)
+- `splitrule` (Splitting Rule)
+- `min.node.size` (Minimal Node Size)
+
+```{r}
+# Define the tuning grid
+rf_filtered_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+                        .splitrule = "gini",
+                        .min.node.size = c(1, 5, 10, 15, 20))
+
+# Define the model and predictions paths
+rf_filtered_model_path <- "../models/rf_filtered_onehot_model.RData"
+rf_filtered_predictions_path <- "../data/predictions/rf_filtered_onehot_predictions.csv"
+
+# Apply the algorithm
+rf_filtered_model <- apply_algorithm("ranger", rf_filtered_tuneGrid, filtered_onehot_train, filtered_onehot_test, rf_filtered_model_path, rf_filtered_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+rf_filtered_onehot_predictions <- read.csv(rf_filtered_predictions_path)
+
+# Get the metrics
+rf_filtered_metrics <- get_prediction_metrics(filtered_onehot_test, rf_filtered_onehot_predictions)
+rf_filtered_metrics$confusion
+rf_filtered_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+rf_filtered_auc <- get_AUC_and_plot(filtered_onehot_test, rf_filtered_onehot_predictions, "rf_filtered_auc.png")
+```
+
+### Gradient Boosting Machines
+
+Gradient boosting is a machine learning technique for regression and classification problems, which produces a prediction model in the form of an ensemble of weak prediction models, typically decision trees.
+
+Tuning parameters:
+
+- `nrounds` (# Boosting Iterations)
+- `max_depth` (Max Tree Depth)
+- `eta` (Shrinkage)
+- `gamma` (Minimum Loss Reduction)
+- `colsample_bytree` (Subsample Ratio of Columns)
+- `min_child_weight` (Minimum Sum of Instance Weight)
+- `subsample` (Subsample Percentage)
+
+```{r}
+# Define the tuning grid
+gbm_tuneGrid <- expand.grid(
+  .nrounds = c(50, 100),              
+  .max_depth = c(3, 4),                
+  .eta = c(0.1, 0.3),                  
+  .gamma = c(0, 0.1),                  
+  .colsample_bytree = c(0.7, 0.9),     
+  .min_child_weight = c(1, 3),         
+  .subsample = c(0.7, 0.9)             
+)
+
+# Define the model and predictions paths
+gbm_filtered_model_path <- "../models/gbm_filtered_onehot_model.RData"
+gbm_filtered_predictions_path <- "../data/predictions/gbm_filtered_onehot_predictions.csv"
+
+# Apply the algorithm
+gbm_filtered_model <- apply_algorithm("xgbTree", gbm_tuneGrid, filtered_onehot_train, filtered_onehot_test, gbm_filtered_model_path, gbm_filtered_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+gbm_filtered_predictions <- read.csv(gbm_filtered_predictions_path)
+
+# Get the metrics
+gbm_filtered_metrics <- get_prediction_metrics(filtered_onehot_test, gbm_filtered_predictions)
+gbm_filtered_metrics$confusion
+gbm_filtered_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+gbm_filtered_auc <- get_AUC_and_plot(filtered_onehot_test, gbm_filtered_predictions, "gbm_filtered_auc.png")
+```
+
+### Stochastic Gradient Boosting
+
+Stochastic Gradient Boosting (SGB) is a generalization of boosting to arbitrary differentiable loss functions. It is particularly useful for classification problems.
+
+Tuning parameters:
+
+- `n.trees` (# Boosting Iterations)
+- `interaction.depth` (Max Tree Depth)
+- `shrinkage` (Shrinkage)
+- `n.minobsinnode` (Min. Terminal Node Size)
+
+```{r}
+# Define the tuning grid
+sgb_tuneGrid <- expand.grid(
+  .n.trees = c(50, 100),              
+  .interaction.depth = c(3, 4),       
+  .shrinkage = c(0.1, 0.3),           
+  .n.minobsinnode = c(10, 20)         
+)
+
+# Define the model and predictions paths
+sgb_filtered_model_path <- "../models/sgb_filtered_onehot_model.RData"
+sgb_filtered_predictions_path <- "../data/predictions/sgb_filtered_onehot_predictions.csv"
+
+# Apply the algorithm
+sgb_filtered_model <- apply_algorithm("gbm", sgb_tuneGrid, filtered_onehot_train, filtered_onehot_test, sgb_filtered_model_path, sgb_filtered_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+sgb_filtered_onehot_predictions <- read.csv(sgb_filtered_predictions_path)
+
+# Get the metrics
+sgb_filtered_metrics <- get_prediction_metrics(filtered_onehot_test, sgb_filtered_onehot_predictions)
+sgb_filtered_metrics$confusion
+sgb_filtered_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+sgb_filtered_auc <- get_AUC_and_plot(filtered_onehot_test, sgb_filtered_onehot_predictions, "sgb_filtered_auc.png")
+```
+
+## PCA Dataset
+
+We will load the `pca_train.csv` and `pca_test.csv` datasets and apply the classification algorithms to them.
+
+```{r}
+# Load the dataset
+pca_train <- read.csv("../data/processed/train/pca_train.csv")
+
+# Load the test dataset
+pca_test <- read.csv("../data/processed/test/pca_test.csv")
+```
+
+### Random Forest
+
+```{r}
+# Define the tuning grid
+rf_pca_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+                        .splitrule = "gini",
+                        .min.node.size = c(1, 5, 10, 15, 20))
+
+# Define the model and predictions paths
+rf_pca_model_path <- "../models/rf_pca_model.RData"
+rf_pca_predictions_path <- "../data/predictions/rf_pca_predictions.csv"
+
+# Apply the algorithm
+rf_pca_model <- apply_algorithm("ranger", rf_pca_tuneGrid, pca_train, pca_test, rf_pca_model_path, rf_pca_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+rf_pca_predictions <- read.csv(rf_pca_predictions_path)
+
+# Get the metrics
+rf_pca_metrics <- get_prediction_metrics(pca_test, rf_pca_predictions)
+rf_pca_metrics$confusion
+rf_pca_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+rf_pca_auc <- get_AUC_and_plot(pca_test, rf_pca_predictions, "rf_pca_auc.png")
+```
+
+### Gradient Boosting Machines
+
+```{r}
+# Define the tuning grid
+gbm_pca_tuneGrid <- expand.grid(
+  .nrounds = c(50, 100),              
+  .max_depth = c(3, 4),                
+  .eta = c(0.1, 0.3),                  
+  .gamma = c(0, 0.1),                  
+  .colsample_bytree = c(0.7, 0.9),     
+  .min_child_weight = c(1, 3),         
+  .subsample = c(0.7, 0.9)             
+)
+
+# Define the model and predictions paths
+gbm_pca_model_path <- "../models/gbm_pca_model.RData"
+gbm_pca_predictions_path <- "../data/predictions/gbm_pca_predictions.csv"
+
+# Apply the algorithm
+gbm_pca_model <- apply_algorithm("xgbTree", gbm_pca_tuneGrid, pca_train, pca_test, gbm_pca_model_path, gbm_pca_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+gbm_pca_predictions <- read.csv(gbm_pca_predictions_path)
+
+# Get the metrics
+gbm_pca_metrics <- get_prediction_metrics(pca_test, gbm_pca_predictions)
+gbm_pca_metrics$confusion
+gbm_pca_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+gbm_pca_auc <- get_AUC_and_plot(pca_test, gbm_pca_predictions, "gbm_pca_auc.png")
+```
+
+### Stochastic Gradient Boosting
+
+```{r}
+# Define the tuning grid
+sgb_pca_tuneGrid <- expand.grid(
+  .n.trees = c(50, 100),              
+  .interaction.depth = c(3, 4),       
+  .shrinkage = c(0.1, 0.3),           
+  .n.minobsinnode = c(10, 20)         
+)
+
+# Define the model and predictions paths
+sgb_pca_model_path <- "../models/sgb_pca_model.RData"
+sgb_pca_predictions_path <- "../data/predictions/sgb_pca_predictions.csv"
+
+# Apply the algorithm
+sgb_pca_model <- apply_algorithm("gbm", sgb_pca_tuneGrid, pca_train, pca_test, sgb_pca_model_path, sgb_pca_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+sgb_pca_predictions <- read.csv(sgb_pca_predictions_path)
+
+# Get the metrics
+sgb_pca_metrics <- get_prediction_metrics(pca_test, sgb_pca_predictions)
+sgb_pca_metrics$confusion
+sgb_pca_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+sgb_pca_auc <- get_AUC_and_plot(pca_test, sgb_pca_predictions, "sgb_pca_auc.png")
+```
+ 
+## SMOTE Dataset
+
+We will load the `smote_train.csv` and `filtered_onehot_test.csv` datasets and apply the classification algorithms to them.
+
+```{r}
+# Load the dataset
+smote_train <- read.csv("../data/processed/train/smote_train.csv")
+
+# Load the test dataset
+smote_test <- read.csv("../data/processed/test/filtered_onehot_test.csv")
+```
+
+### Random Forest
+
+```{r}
+# Define the tuning grid
+rf_smote_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+                        .splitrule = "gini",
+                        .min.node.size = c(1, 5, 10, 15, 20))
+
+# Define the model and predictions paths
+rf_smote_model_path <- "../models/rf_smote_model.RData"
+rf_smote_predictions_path <- "../data/predictions/rf_smote_predictions.csv"
+
+# Apply the algorithm
+rf_smote_model <- apply_algorithm("ranger", rf_smote_tuneGrid, smote_train, smote_test, rf_smote_model_path, rf_smote_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+rf_smote_predictions <- read.csv(rf_smote_predictions_path)
+
+# Get the metrics
+rf_smote_metrics <- get_prediction_metrics(smote_test, rf_smote_predictions)
+rf_smote_metrics$confusion
+rf_smote_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+rf_smote_auc <- get_AUC_and_plot(smote_test, rf_smote_predictions, "rf_smote_auc.png")
+```
+
+### Gradient Boosting Machines
+
+```{r}
+# Define the tuning grid
+gbm_smote_tuneGrid <- expand.grid(
+  .nrounds = c(50, 100),              
+  .max_depth = c(3, 4),                
+  .eta = c(0.1, 0.3),                  
+  .gamma = c(0, 0.1),                  
+  .colsample_bytree = c(0.7, 0.9),     
+  .min_child_weight = c(1, 3),         
+  .subsample = c(0.7, 0.9)             
+)
+
+# Define the model and predictions paths
+gbm_smote_model_path <- "../models/gbm_smote_model.RData"
+gbm_smote_predictions_path <- "../data/predictions/gbm_smote_predictions.csv"
+
+# Apply the algorithm
+gbm_smote_model <- apply_algorithm("xgbTree", gbm_smote_tuneGrid, smote_train, smote_test, gbm_smote_model_path, gbm_smote_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+gbm_smote_predictions <- read.csv(gbm_smote_predictions_path)
+
+# Get the metrics
+gbm_smote_metrics <- get_prediction_metrics(smote_test, gbm_smote_predictions)
+gbm_smote_metrics$confusion
+gbm_smote_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+gbm_smote_auc <- get_AUC_and_plot(smote_test, gbm_smote_predictions, "gbm_smote_auc.png")
+```
+
+### Stochastic Gradient Boosting
+
+```{r}
+# Define the tuning grid
+sgb_smote_tuneGrid <- expand.grid(
+  .n.trees = c(50, 100),              
+  .interaction.depth = c(3, 4),       
+  .shrinkage = c(0.1, 0.3),           
+  .n.minobsinnode = c(10, 20)         
+)
+
+# Define the model and predictions paths
+sgb_smote_model_path <- "../models/sgb_smote_model.RData"
+sgb_smote_predictions_path <- "../data/predictions/sgb_smote_predictions.csv"
+
+# Apply the algorithm
+sgb_smote_model <- apply_algorithm("gbm", sgb_smote_tuneGrid, smote_train, smote_test, sgb_smote_model_path, sgb_smote_predictions_path)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+sgb_smote_predictions <- read.csv(sgb_smote_predictions_path)
+
+# Get the metrics
+sgb_smote_metrics <- get_prediction_metrics(smote_test, sgb_smote_predictions)
+sgb_smote_metrics$confusion
+sgb_smote_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+sgb_smote_auc <- get_AUC_and_plot(smote_test, sgb_smote_predictions, "sgb_smote_auc.png")
+```
+
+## Weighted Dataset
+
+We will load the `weighted_train.csv` and `weighted_test.csv` datasets and apply the classification algorithms to them.
+
+```{r}
+# Load the dataset
+weighted_train <- read.csv("../data/processed/train/weighted_train.csv")
+
+# Load the test dataset
+weighted_test <- read.csv("../data/processed/test/filtered_onehot_test.csv")
+```
+
+### Random Forest
+
+This method is a combination of tree predictors such that each tree depends on the values of a random vector sampled independently and with the same distribution for all trees in the forest. Ranger is a fast implementation of Random Forest for high-dimensional data.
+
+Tuning parameters:
+- `mtry` (#Randomly Selected Predictors)
+- `splitrule` (Splitting Rule)
+- `min.node.size` (Minimal Node Size)
+
+```{r}
+# Define the tuning grid
+rf_weighted_tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+                        .splitrule = "gini",
+                        .min.node.size = c(1, 5, 10, 15, 20))
+
+# Define the model and predictions paths
+rf_weighted_model_path <- "../models/rf_weighted_model.RData"
+rf_weighted_predictions_path <- "../data/predictions/rf_weighted_predictions.csv"
+
+# Apply the algorithm
+rf_weighted_model <- apply_algorithm("ranger", rf_weighted_tuneGrid, weighted_train, weighted_test, rf_weighted_model_path, rf_weighted_predictions_path, use_weights = TRUE)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+rf_weighted_predictions <- read.csv(rf_weighted_predictions_path)
+
+# Get the metrics
+rf_weighted_metrics <- get_prediction_metrics(weighted_test, rf_weighted_predictions)
+rf_weighted_metrics$confusion
+rf_weighted_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+rf_weighted_auc <- get_AUC_and_plot(weighted_test, rf_weighted_predictions, "rf_weighted_auc.png")
+```
+
+### Gradient Boosting Machines
+
+Gradient boosting is a machine learning technique for regression and classification problems, which produces a prediction model in the form of an ensemble of weak prediction models, typically decision trees.
+
+Tuning parameters:
+
+- `nrounds` (# Boosting Iterations)
+- `max_depth` (Max Tree Depth)
+- `eta` (Shrinkage)
+- `gamma` (Minimum Loss Reduction)
+- `colsample_bytree` (Subsample Ratio of Columns)
+- `min_child_weight` (Minimum Sum of Instance Weight)
+- `subsample` (Subsample Percentage)
+
+```{r}
+# Define the tuning grid
+gbm_tuneGrid <- expand.grid(
+  .nrounds = c(50, 100),              
+  .max_depth = c(3, 4),                
+  .eta = c(0.1, 0.3),                  
+  .gamma = c(0, 0.1),                  
+  .colsample_bytree = c(0.7, 0.9),     
+  .min_child_weight = c(1, 3),         
+  .subsample = c(0.7, 0.9)             
+)
+
+# Define the model and predictions paths
+gbm_weighted_model_path <- "../models/gbm_weighted_model.RData"
+gbm_weighted_predictions_path <- "../data/predictions/gbm_weighted_predictions.csv"
+
+# Apply the algorithm
+gbm_weighted_model <- apply_algorithm("xgbTree", gbm_tuneGrid, weighted_train, weighted_test, gbm_weighted_model_path, gbm_weighted_predictions_path, use_weights = TRUE)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+gbm_weighted_predictions <- read.csv(gbm_weighted_predictions_path)
+
+# Get the metrics
+gbm_weighted_metrics <- get_prediction_metrics(weighted_test, gbm_weighted_predictions)
+gbm_weighted_metrics$confusion
+gbm_weighted_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+gbm_weighted_auc <- get_AUC_and_plot(weighted_test, gbm_weighted_predictions, "gbm_weighted_auc.png")
+```
+
+### Stochastic Gradient Boosting
+
+Stochastic Gradient Boosting (SGB) is a generalization of boosting to arbitrary differentiable loss functions. It is particularly useful for classification problems.
+
+Tuning parameters:
+
+- `n.trees` (# Boosting Iterations)
+- `interaction.depth` (Max Tree Depth)
+- `shrinkage` (Shrinkage)
+- `n.minobsinnode` (Min. Terminal Node Size)
+
+```{r}
+# Define the tuning grid
+sgb_tuneGrid <- expand.grid(
+  .n.trees = c(50, 100),              
+  .interaction.depth = c(3, 4),       
+  .shrinkage = c(0.1, 0.3),           
+  .n.minobsinnode = c(10, 20)         
+)
+
+# Define the model and predictions paths
+sgb_weighted_model_path <- "../models/sgb_weighted_model.RData"
+sgb_weighted_predictions_path <- "../data/predictions/sgb_weighted_predictions.csv"
+
+# Apply the algorithm
+sgb_weighted_model <- apply_algorithm("gbm", sgb_tuneGrid, weighted_train, weighted_test, sgb_weighted_model_path, sgb_weighted_predictions_path, use_weights = TRUE)
+```
+
+Now we can evaluate the model using the confusion matrix and other metrics.
+
+```{r}
+# Load the predictions
+sgb_weighted_predictions <- read.csv("../data/predictions/sgb_weighted_predictions.csv")
+
+# Get the metrics
+sgb_weighted_metrics <- get_prediction_metrics(weighted_test, sgb_weighted_predictions)
+sgb_weighted_metrics$confusion
+sgb_weighted_metrics$metrics_table
+```
+
+Finally, we can calculate the AUC.
+
+```{r}
+# Get the AUC
+sgb_weighted_auc <- get_AUC_and_plot(weighted_test, sgb_weighted_predictions, "sgb_weighted_auc.png")
+```
+
+
+# F1-Score
+```{r}
+calculate_f1_score <- function(metrics_table) {
+  if (!"F1" %in% colnames(metrics_table)) {
+    stop("The table does not contain an 'F1' column.")
+  }
+  
+  f1_scores <- as.numeric(metrics_table$F1)
+  
+  # Calculate the mean of the F1 scores
+  f1_score <- mean(f1_scores, na.rm = TRUE) # Use na.rm = TRUE to handle missing values
+  
+  return(f1_score)
+}
+```
+
+
+```{r}
+rf_onehot_f1 <- calculate_f1_score(rf_onehot_metrics$metrics_table)
+rf_filtered_f1 <- calculate_f1_score(rf_filtered_metrics$metrics_table)
+rf_pca_f1 <- calculate_f1_score(rf_pca_metrics$metrics_table)
+rf_smote_f1 <- calculate_f1_score(rf_smote_metrics$metrics_table)
+rf_weighted_f1 <- calculate_f1_score(rf_weighted_metrics$metrics_table)
+
+gbm_onehot_f1 <- calculate_f1_score(gbm_onehot_metrics$metrics_table)
+gbm_filtered_f1 <- calculate_f1_score(gbm_filtered_metrics$metrics_table)
+gbm_pca_f1 <- calculate_f1_score(gbm_pca_metrics$metrics_table)
+gbm_smote_f1 <- calculate_f1_score(gbm_smote_metrics$metrics_table)
+gbm_weighted_f1 <- calculate_f1_score(gbm_weighted_metrics$metrics_table)
+
+sgb_onehot_f1 <- calculate_f1_score(sgb_onehot_metrics$metrics_table)
+sgb_filtered_f1 <- calculate_f1_score(sgb_filtered_metrics$metrics_table)
+sgb_pca_f1 <- calculate_f1_score(sgb_pca_metrics$metrics_table)
+sgb_smote_f1 <- calculate_f1_score(sgb_smote_metrics$metrics_table)
+sgb_weighted_f1 <- calculate_f1_score(sgb_weighted_metrics$metrics_table)
+
+f1_score_df <- data.frame(
+  onehot = c(rf_onehot_f1, gbm_onehot_f1, sgb_onehot_f1),
+  filtered = c(rf_filtered_f1, gbm_filtered_f1, sgb_filtered_f1),
+  pca = c(rf_pca_f1, gbm_pca_f1, sgb_pca_f1),
+  smote = c(rf_smote_f1, gbm_smote_f1, sgb_smote_f1),
+  weighted = c(rf_weighted_f1, gbm_weighted_f1, sgb_weighted_f1),
+  row.names = c("rf", "gbm", "sgb")
+)
+
+print(f1_score_df)
+
+## Save the table in a csv
+write.csv(f1_score_df, "../results/supervised/f1_score.csv", row.names = TRUE)
+```
+
+
+```{r}
+# Function to extract and store metrics from a table
+extract_metrics <- function(metrics_table, algorithm, dataset) {
+  # Add a suffix to identify the algorithm_dataset combination
+  colnames(metrics_table) <- paste0(algorithm, "_", dataset, "_", colnames(metrics_table))
+  return(metrics_table)
+}
+
+# Lists to store all metrics for different algorithms and datasets
+sensitivities <- list()
+specificities <- list()
+pos_pred_values <- list()
+neg_pred_values <- list()
+precisions <- list()
+recalls <- list()
+f1_scores <- list()
+prevalences <- list()
+detection_rates <- list()
+detection_prevalences <- list()
+balanced_accuracies <- list()
+
+# Function to process each metrics table
+process_metrics <- function(metrics_table, algorithm, dataset) {
+  sensitivities[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Sensitivity
+  specificities[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Specificity
+  pos_pred_values[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Pos Pred Value`
+  neg_pred_values[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Neg Pred Value`
+  precisions[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Precision
+  recalls[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Recall
+  f1_scores[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$F1
+  prevalences[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$Prevalence
+  detection_rates[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Detection Rate`
+  detection_prevalences[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Detection Prevalence`
+  balanced_accuracies[[paste(algorithm, dataset, sep = "_")]] <<- metrics_table$`Balanced Accuracy`
+}
+
+# Process metrics for each algorithm and dataset combination
+process_metrics(rf_onehot_metrics$metrics_table, "rf", "onehot")
+process_metrics(rf_filtered_metrics$metrics_table, "rf", "filtered")
+process_metrics(rf_pca_metrics$metrics_table, "rf", "pca")
+process_metrics(rf_smote_metrics$metrics_table, "rf", "smote")
+process_metrics(rf_weighted_metrics$metrics_table, "rf", "weighted")
+
+
+process_metrics(gbm_onehot_metrics$metrics_table, "gbm", "onehot")
+process_metrics(gbm_filtered_metrics$metrics_table, "gbm", "filtered")
+process_metrics(gbm_pca_metrics$metrics_table, "gbm", "pca")
+process_metrics(gbm_smote_metrics$metrics_table, "gbm", "smote")
+process_metrics(gbm_weighted_metrics$metrics_table, "gbm", "weighted")
+
+process_metrics(sgb_onehot_metrics$metrics_table, "sgb", "onehot")
+process_metrics(sgb_filtered_metrics$metrics_table, "sgb", "filtered")
+process_metrics(sgb_pca_metrics$metrics_table, "sgb", "pca")
+process_metrics(sgb_smote_metrics$metrics_table, "sgb", "smote")
+process_metrics(sgb_weighted_metrics$metrics_table, "sgb", "weighted")
+
+# Combine results into tables for each metric
+table_sensitivities <- do.call(cbind, sensitivities)
+table_specificities <- do.call(cbind, specificities)
+table_pos_pred_values <- do.call(cbind, pos_pred_values)
+table_neg_pred_values <- do.call(cbind, neg_pred_values)
+table_precisions <- do.call(cbind, precisions)
+table_recalls <- do.call(cbind, recalls)
+table_f1_scores <- do.call(cbind, f1_scores)
+table_prevalences <- do.call(cbind, prevalences)
+table_detection_rates <- do.call(cbind, detection_rates)
+table_detection_prevalences <- do.call(cbind, detection_prevalences)
+table_balanced_accuracies <- do.call(cbind, balanced_accuracies)
+
+print(table_sensitivities)
+print(table_specificities)
+print(table_pos_pred_values)
+print(table_neg_pred_values)
+print(table_precisions)
+print(table_recalls)
+print(table_f1_scores)
+print(table_prevalences)
+print(table_detection_rates)
+print(table_detection_prevalences)
+print(table_balanced_accuracies)
+
+# Save the tables in csv files
+write.csv(table_sensitivities, "../results/supervised/sensitivities.csv", row.names = TRUE)
+write.csv(table_specificities, "../results/supervised/specificities.csv", row.names = TRUE)
+write.csv(table_pos_pred_values, "../results/supervised/pos_pred_values.csv", row.names = TRUE)
+write.csv(table_neg_pred_values, "../results/supervised/neg_pred_values.csv", row.names = TRUE)
+write.csv(table_precisions, "../results/supervised/precisions.csv", row.names = TRUE)
+write.csv(table_recalls, "../results/supervised/recalls.csv", row.names = TRUE)
+write.csv(table_f1_scores, "../results/supervised/f1_scores.csv", row.names = TRUE)
+write.csv(table_prevalences, "../results/supervised/prevalences.csv", row.names = TRUE)
+write.csv(table_detection_rates, "../results/supervised/detection_rates.csv", row.names = TRUE)
+write.csv(table_detection_prevalences, "../results/supervised/detection_prevalences.csv", row.names = TRUE)
+write.csv(table_balanced_accuracies, "../results/supervised/balanced_accuracies.csv", row.names = TRUE)
+```
+
+Finally, we will define the `get_summary` function to get a summary of the metrics for each class. The function will calculate the maximum, mean, and median values for each metric and class. In the case of `Prevalence` and `Detection Prevalence`, only the mean and median values will be calculated, as the maximum value is not relevant.
+
+```{r}
+files <- c(
+  "../results/supervised/sensitivities.csv",
+  "../results/supervised/specificities.csv",
+  "../results/supervised/pos_pred_values.csv",
+  "../results/supervised/neg_pred_values.csv",
+  "../results/supervised/precisions.csv",
+  "../results/supervised/recalls.csv",
+  "../results/supervised/f1_scores.csv",
+  "../results/supervised/prevalences.csv",
+  "../results/supervised/detection_rates.csv",
+  "../results/supervised/detection_prevalences.csv",
+  "../results/supervised/balanced_accuracies.csv"
+)
+
+metrics_only_mean_median <- c("prevalences", "detection_prevalences")
+
+get_summary <- function(file) {
+  data <- read.csv(file, header = TRUE, row.names = 1)
+  
+  # Extract the metric name from the file name
+  metric_name <- tools::file_path_sans_ext(basename(file))
+  
+  summary <- data.frame(
+    Class = rownames(data),
+    Mean = apply(data, 1, mean),
+    Median = apply(data, 1, median)
+  )
+  
+  if (!(metric_name %in% metrics_only_mean_median)) {
+    # Find the maximum value and the corresponding model
+    max_values <- apply(data, 1, max)
+    max_models <- apply(data, 1, function(row) colnames(data)[which.max(row)])
+    
+    summary$Maximum <- max_values
+    summary$BestModel <- max_models
+  }
+  
+  return(summary)
+}
+
+invisible(lapply(files, function(file) {
+  summary <- get_summary(file)
+  metric_name <- tools::file_path_sans_ext(basename(file))
+  output_file <- paste0("../results/supervised/summary/", metric_name, "_summary.csv")
+  
+  write.csv(summary, output_file, row.names = FALSE)
+  
+  cat("Saved summary for", metric_name, "to", output_file, "\n")
+}))
+
+```
+
+# Probabilities normalization
+
+We need to normalize the probabilities so that they sum exactly 1. This is necessary to ensure that the probabilities are consistent and can be used to make decisions.
+
+```{r}
+normalize_probabilities <- function(file_path) {
+  df <- read.csv(file_path)
+  
+  # Select the columns of probabilities
+  cols_prob <- grep("probabilities\\.", names(df))
+  
+  # Normalize the probabilities so that they sum exactly 1
+  df[cols_prob] <- t(apply(df[cols_prob], 1, function(x) x / sum(x)))
+  
+  # Overwrite the original file
+  write.csv(df, file_path, row.names = FALSE)
+  
+  message("Probabilities normalized and saved to", file_path)
+}
+```
+
+We will normalize every prediction file.
+
+```{r}
+prediction_files <- list.files("../data/predictions", full.names = TRUE)
+
+invisible(lapply(prediction_files, normalize_probabilities))
+```

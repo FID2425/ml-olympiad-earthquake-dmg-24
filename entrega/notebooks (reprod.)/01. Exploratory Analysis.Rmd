@@ -1,0 +1,312 @@
+# 01. Exploratory Analysis
+
+To conduct an exploratory analysis of the data we need to do several things - Load the data - Check the data types - Check for missing values - Check for duplicates - Check for data distribution - Check for data correlation with the target variable to clean data - Visualize and interpret the data to understand it better
+
+## Setup
+
+```{r}
+# Load libraries
+library(tidyverse)
+library(corrplot)
+library(dplyr)
+library(DataExplorer)
+
+# Load the data
+data <- read.csv("../data/raw/raw_data_train.csv")
+
+# View data
+head(data)
+dim(data)
+str(data)
+```
+
+We can already see some columns that will need some processing and analysis to understand its content. We can identify so far:
+- Numeric columns representing continuous integer and percentages values
+- Categorical columns as strings (chr)
+- Boolean columns as integers, which need duplication checking
+
+We will take this into account later for data visualization and interpretation
+
+## Check duplicate values
+
+```{r}
+# Check for duplicates
+duplicated_rows <- data[duplicated(data),]
+duplicated_rows
+
+duplicated_columns <- data[,duplicated(t(data))]
+duplicated_columns
+```
+
+Fortunately the data seems to be quite clean and does not contain any duplicates, or exact duplicates. But some columns such as has_superstructure_rc_non_engineered and has_superstructure_rc_engineered seemed to be opposite in description and presented the same first few values, so we will need to look further into them later on.
+
+## Check Null values
+
+```{r}
+# Check for missing values
+missing_values <- data %>% summarise_all(~sum(is.na(.)))
+missing_values
+```
+
+Same as previously, data seems to be quite clean in this regard with no missing values.
+
+## Data correlation
+
+### Linear correlation
+
+For this dataset, we will check the correlation of the data with the target variable, which is `damage_grade`. We will use the correlation function to check the correlation of the data with the target variable.
+
+```{r}
+# Get a copy of the data
+data_copy <- data
+# Get categorical columns
+categorical_columns <- colnames(data)[sapply(data, is.character)]
+# Convert categorical columns to factors and then to numeric
+data_copy[categorical_columns] <- lapply(data_copy[categorical_columns], as.factor)
+data_copy[categorical_columns] <- lapply(data_copy[categorical_columns], as.numeric)
+# Check correlation 
+correlation <- cor(data_copy)
+# Plot correlation matrix without labels
+corrplot(correlation, method = "color", order = "hclust", tl.col = "black", tl.pos = 'n')
+# Check correlation with target variable
+correlation_target <- correlation["damage_grade",]
+# Plot correlation with target variable 
+barplot(correlation_target, main="Correlation with target variable", col="lightblue", )
+# Get columns with an absolute correlation higher than 0.2
+columns_correlation <- correlation_target[abs(correlation_target) > 0.2]
+columns_correlation
+```
+
+With this information we can see that the columns with the highest correlation are:
+
+-   `age` (0.269): We can infer that the age of the building is a significant factor in the damage grade, which is expected as older buildings are more likely to be damaged.
+-   `area_percentage` (-0.325): Larger area percentages are correlated with lower damage grades, which could mean that larger buildings might experience less relative damage.
+-   `roof_type` (-0.324): We can infer that the roof type is a significant factor in the damage grade, which is expected as some roof types are more resistant to earthquakes.
+-   `has_superstructure_mud_mortar_stone` (0.393), `has_superstructure_cement_mortar_brick` (-0.415), `has_superstructure_rc_non_engineered` (-0.221) and `has_superstructure_rc_engineered` (-0.259): We can infer that the superstructure material is a significant factor in the damage grade, which is expected as some materials are more resistant to earthquakes.
+
+## Data visualization and interpretation
+
+Now we will try to extract some meaning behind the data, to understand it better before we proceed with the processing. This is due to potential significant information being hidden in the data that we can use to improve our models down the line.
+
+### Numeric
+
+There are two kind of numeric columns:
+- Percentages
+- Continuous Integer values
+
+#### Percentages
+
+```{r}
+# Check value limits for percentages colums (contain "percentage" in colname)
+percentages_columns <- colnames(data)[grepl("percentage", colnames(data))]
+summary(data[, percentages_columns])
+```
+
+As we can see the 3rd quartile and max values are pretty far apart, so we can use a boxplot to check for outliers.
+
+```{r}
+# Boxplot for percentages columns
+par(mfrow=c(1,2))
+boxplot(data$area_percentage, main="Area Percentage", col="lightblue")
+boxplot(data$height_percentage, main="Height Percentage", col="orange")
+```
+
+Knowing from the data description that these percentages represent a normalization of the area and height of the buildings we can see that most of the buildings affected probably were residential.
+
+#### Continuous Integer values
+
+```{r}
+# Columns are: age, building_id, count_floors_pre_eq, count_families
+continuous_columns <- colnames(data)[sapply(data, is.integer) & !grepl("percentage", colnames(data))]
+# Visualize as historgam
+ggplot(data, aes(x=age)) + geom_histogram(binwidth=1, fill="lightblue", color="black", alpha=0.7) + labs(title="Age Histogram", x="Age", y="Count")
+ggplot(data, aes(x=count_floors_pre_eq)) + geom_histogram(binwidth=1, fill="lightblue", color="black", alpha=0.7) + labs(title="Count Floors Pre EQ Histogram", x="Count Floors Pre EQ", y="Count")
+ggplot(data, aes(x=count_families)) + geom_histogram(binwidth=1, fill="lightblue", color="black", alpha=0.7) + labs(title="Count Families Histogram", x="Count Families", y="Count")
+ggplot(data, aes(x=building_id)) + geom_histogram(binwidth=1, fill="lightblue", color="black", alpha=0.7) + labs(title="Building ID Histogram", x="Building ID", y="Count")
+```
+On the data visualized we draw a few conclusions:
+- Most of the buildings are relatively new, with the most common value being 0, which could mean that the data is not accurate or that most of the buildings are new. It could also mean that prior processing has been applied to this data and buildings with unknown age have been assigned a value of 0.
+- Most of the buildings have 2 floors, which is expected as most buildings are though to be residential from prior data.
+- Most of the buildings have 1 family, which is expected as most buildings are though to be residential from prior data. On this column, we believe it could be removed from the dataset when building predictive models as it does not seem to be very informative nor contain much variation.
+- Finally, on the building_id column, it is clear that it refers to an index, thus must be removed for further analysis.
+
+### Categorical
+
+```{r}
+# Check list of values for categorical columns (<chr>)
+categorical_columns <- colnames(data)[sapply(data, is.character)]
+```
+
+```{r}
+# We check the different values of each column by showing unique values.Represent by showing bar plots of each of the columns. x axis being values, y axis being counts. Add colors per column and add a number a top of each bar.
+for (col in categorical_columns) {
+  barplot(table(data[, col]), col=rainbow(length(table(data[, col]))), main=col)
+}
+```
+
+After observing the position variable, we wonder what could it mean and if it is related to distance to the epicenter. To check this we can group by position and check the mean of the target.
+
+```{r}
+# Plot position variable against target variable.
+position_target <- data %>% group_by(position) %>% summarise(mean_target = mean(damage_grade))
+ggplot(position_target, aes(x=position, y=mean_target)) + geom_bar(stat="identity")
+```
+
+Unfortunately there does not seem to be a clear relationship between position and damage_grade.
+
+We also want to check what could foundation types mean and wether some are "stronger" or better than others which could be useful for preprocessing data.
+
+```{r}
+# Plot foundation_type variable against target variable.
+foundation_target <- data %>% group_by(foundation_type) %>% summarise(n=n(), mean_target = mean(damage_grade))
+foundation_target
+```
+
+```{r}
+# barplot for each foundation type
+ggplot(foundation_target, aes(x=foundation_type, y=mean_target)) + geom_bar(stat="identity")
+```
+
+We believe foundation type is closely related to damage grade, not only because of intuition but because the mean damage grade is different for each foundation type. We will keep this in mind for the next stages.
+
+#### Other categorical columns
+
+As far as other categorical columns go, `plan_configuration` and `legal_ownership_status` are very clear to us that they will only add noise or non-valuable information to further analysis as a very high percentage (close to 100%) are of the same value and we believe will only increase compute time when building predictive models.
+
+As for the other columns, we will keep them for now but do not see any clear correlation with the target variable just yet from intuition only.
+
+### Binary
+
+```{r}
+# Check list of values for binary columns 0 or 1 (<int>)
+binary_columns <- data %>% select_if(~all(. %in% c(0,1))) %>% colnames()
+binary_columns
+```
+
+We can appreciate that the binary columns are all related to the superstructure
+of the building and the secondary use of the building. 
+
+Now we will check if this columns might represent a "camouflaged" categorical
+variable. 
+
+```{r}
+superstructure_columns <- colnames(data)[grepl("has_superstructure", colnames(data))]
+secondary_use_columns <- colnames(data)[grepl("has_secondary_use", colnames(data))]
+# Is there a row with all superstructure columns as 0?
+no_superstructure_rows <- nrow(data[rowSums(data[, superstructure_columns]) == 0, ])
+no_superstructure_rows
+# Is there a row with all secondary use columns as 0?
+no_secondary_use_rows <- nrow(data[rowSums(data[, secondary_use_columns]) == 0, ])
+no_secondary_use_rows
+```
+
+We can see that this values are not "camouflaged" categorical, as there are
+rows with all values as 0.
+
+Now we will check if there are cases that have more than one superstructure or
+secondary use.
+
+```{r}
+# Check if there are rows with more than one superstructure
+more_than_one_superstructure <- nrow(data[rowSums(data[, superstructure_columns]) > 1, ])
+more_than_one_superstructure
+# Check if there are rows with more than one secondary use
+more_than_one_secondary_use <- nrow(data[rowSums(data[, secondary_use_columns]) > 1, ])
+more_than_one_secondary_use
+```
+
+As a last step we will check the distribution of the binary columns, considering
+that there can be multiple combinations of these columns.
+
+```{r}
+# Calculate unique combinations for superstructure columns
+superstructure_combinations <- data %>%
+  select(all_of(superstructure_columns)) %>%
+  mutate(combination = apply(., 1, paste, collapse = "-")) %>%
+  count(combination) %>%
+  mutate(percentage = n / sum(n) * 100)
+superstructure_combinations
+# Plot distribution of superstructure combinations
+superstructure_labels <- ifelse(superstructure_combinations$percentage > 5, paste0(superstructure_combinations$combination, " (", round(superstructure_combinations$percentage, 1), "%)"),
+"")
+pie(
+  superstructure_combinations$percentage,
+  labels = superstructure_labels,
+  main = "Distribution of Superstructure Combinations",
+  col = rainbow(nrow(superstructure_combinations)),
+  border = FALSE
+)
+
+# Calculate unique combinations for secondary use columns
+secondary_use_combinations <- data %>%
+  select(all_of(secondary_use_columns)) %>%
+  mutate(combination = apply(., 1, paste, collapse = "-")) %>%
+  count(combination) %>%
+  mutate(percentage = n / sum(n) * 100)
+secondary_use_combinations
+# Plot distribution of secondary use combinations
+secondary_use_labels <- ifelse(secondary_use_combinations$percentage > 5, paste0(secondary_use_combinations$combination, " (", round(secondary_use_combinations$percentage, 1), "%)"),
+"")
+pie(
+  secondary_use_combinations$percentage,
+  labels = secondary_use_labels,
+  main = "Distribution of Secondary Use Combinations",
+  col = rainbow(nrow(secondary_use_combinations)),
+  border = FALSE
+)
+```
+
+We can see that the distribution of the superstructure and secondary use columns
+is quite varied. For superstructure columns, the most common combinations are
+`mud_mortar_stone` (23.9%), `mud_mortar_stone` with `timber` (14.6%), `cement_mortar_brick` (8.2%) and no superstructure (6.7%). For secondary use columns, the most common combinations are no secondary use (78.1%) and `agriculture` with `rental` (5.1%).
+
+## Analysis with specialized utilities
+
+This type of analysis is very common in the data science field, so there are many libraries that can help us with this task. One of them is the `DataExplorer` library, which provides a set of functions to visualize and interpret the data.
+
+In this section we will use it to both confirm that our analysis was correct and to see if anything else can be extracted from
+
+```{r}
+help(create_report)
+create_report(data)
+``` 
+
+The generated report is available in this folder and can be consulted for further detail. For the most part it does not provide any information that we have not already extracted. However we did notice one additional point regarding secondary use columns, which is that some of them present almost no variation (very close to 0 buildings presenting that use) and could be considered for removal if reduction of dimensionality is needed.
+
+Furthermore it presented us with an analysis on PCA (Principal Component Analysis) which we will consider for data preprocessing on the next steps.
+
+## Conclusions
+
+After conducting the exploratory analysis we can draw the following conclusions, which are separated on this subsections:
+
+### Data quality
+Data is clean and does not contain any missing values or duplicates
+
+### Data variety
+Data contains a mix of numeric, categorical and binary columns, although not very varied in nature.
+
+### Data importance
+Columns with the highest correlation to the target variable are:
+- `age` (0.269)
+- `area_percentage` (-0.325)
+- `roof_type` (-0.324)
+- `has_superstructure_mud_mortar_stone` (0.393)
+- `has_superstructure_cement_mortar_brick` (-0.415)
+- `has_superstructure_rc_engineered` (-0.259)
+- `has_superstructure_rc_non_engineered` (-0.221)
+- `has_secondary_use_hotel` (0.291)
+
+Although other columns may still possess significant value as combined might present a higher correlation (e.g. A combination of superstructure materials making the buildings more resistant).
+
+There are however, a few columns we identified that could be removed if needed to reduce dimensionality or noise in the data, as we believe it wouldn't affect much the results. Taking in mind of course that building preliminary models to confirm this would be beneficial still:
+- `building_id`
+- `plan_configuration`
+- `legal_ownership_status`
+- `count_families`
+- `has_secondary_use_use_police`
+- `has_secondary_use_gov_office`
+- `has_secondary_use_health_post`
+- `has_secondary_use_industry`
+- `has_secondary_use_institution`
+- `has_secondary_use_school`
+- `has_secondary_use_other`

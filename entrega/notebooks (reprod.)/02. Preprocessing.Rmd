@@ -1,0 +1,714 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+# 02. Preprocessing
+
+Preprocessing is a crucial step in the data analysis pipeline, as it helps to clean, transform, and prepare the data for further analysis and modeling. In this notebook, we will perform various preprocessing tasks on the dataset to ensure its quality and suitability for machine learning algorithms.
+
+## Setup
+
+```{r}
+# Load libraries
+library(tidyverse)
+
+# Load the data
+data <- read.csv("../data/raw/raw_data_train.csv")
+
+# View data
+head(data)
+dim(data)
+str(data)
+```
+
+## Data cleaning
+
+Data cleaning is an essential step to ensure the dataset's quality and reliability. In this section, we will address missing values, duplicate rows, and inconsistent data to prepare the dataset for further analysis.
+
+### Column unification
+
+#### Unify Has_secondary_use columns
+
+We have decided to remove the existing `has_secondary_use` column from our dataset. The main reason for this decision is the potential presence of inconsistent data, which could affect the quality and accuracy of future analyses.
+
+To ensure the dataset's integrity, we have recalculated the `has_secondary_use` column using the related columns (`has_secondary_use_etc`). This decision helps us:
+
+-   **Reduce noise** in the dataset by removing the multiple columns (`has_secondary_use_etc`) that previously complicated the analysis.
+-   **Centralize information** into a single, consistent column (`has_secondary_use`) that has been verified and adjusted for reliability.
+
+It is important to mention that we will keep the columns `has_secondary_use_agriculture`, `has_secondary_use_rental` and `has_secondary_use_hotel`; as we have seen in the EDA, these three columns do provide useful information to the dataset. With this approach, we aim to make future analyses clearer and based on more trustworthy data.
+
+```{r}
+
+print("Before unification")
+# has_secondary_use = 0 number of samples
+print(data %>% filter(has_secondary_use == 0) %>% nrow())
+
+# has_secondary_use = 1 number of samples
+print(data %>% filter(has_secondary_use == 1) %>% nrow())
+
+## Remove the has_secondary_use column
+new_df <- data %>% select(-has_secondary_use)
+
+# Unify the has_secondary_use columns
+data <- new_df %>%
+  mutate(has_secondary_use = if_else(
+    rowSums(select(., starts_with("has_secondary_use_"))) > 0, 
+    1, 
+    0
+  ))
+
+print("After unification")
+
+# has_secondary_use = 0 number of samples
+print(data %>% filter(has_secondary_use == 0) %>% nrow())
+
+# has_secondary_use = 1 number of samples
+print(data %>% filter(has_secondary_use == 1) %>% nrow())
+```
+
+### Column elimination
+
+According to the conclusions of the Exploratory Analysis, we will eliminate the following columns:
+
+-   `building_id`
+-   `plan_configuration`
+-   `legal_ownership_status`
+-   `count_families`
+-   `has_secondary_use_use_police`
+-   `has_secondary_use_gov_office`
+-   `has_secondary_use_health_post`
+-   `has_secondary_use_industry`
+-   `has_secondary_use_institution`
+-   `has_secondary_use_school`
+-   `has_secondary_use_other`
+
+```{r}
+clean_data <- data %>%
+  select(-building_id, -plan_configuration, -legal_ownership_status, -count_families, -has_secondary_use_use_police, -has_secondary_use_gov_office, -has_secondary_use_health_post, -has_secondary_use_industry, -has_secondary_use_institution, -has_secondary_use_school, -has_secondary_use_other)
+
+# View data
+head(clean_data)
+dim(clean_data)
+str(clean_data)
+```
+
+As we can see, after eliminating the mentioned columns, the data has 26 columns.
+
+At this point, we are going to generate a csv file with the data after column unification and elimination, in order to use it in the next steps.
+
+```{r}
+write.csv(clean_data, "../data/processed/clean_data.csv", row.names = FALSE)
+```
+
+## Train-test split
+
+After cleaning the data, we will split the dataset into training and testing sets to prepare for further analysis and modeling. We will use a stratified 80-20 split to ensure that the distribution of the target variable is consistent between the training and testing sets. 
+
+```{r}
+library(caret)
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Split the data into training and testing sets
+train_size <- 0.8
+train_index <- createDataPartition(clean_data$damage_grade, p = train_size, list = FALSE)
+
+train_data <- clean_data[train_index, ]
+test_data <- clean_data[-train_index, ]
+
+# View the dimensions of the training and testing sets
+dim(train_data)
+dim(test_data)
+
+# Check the distribution of the target variable in the training and testing sets
+table(train_data$damage_grade)
+table(test_data$damage_grade)
+
+# Save the training and testing sets to CSV files
+write.csv(train_data, "../data/processed/train/train.csv", row.names = FALSE)
+write.csv(test_data, "../data/processed/test/test.csv", row.names = FALSE)
+```
+
+## Train set preprocessing
+
+In this section, we will perform preprocessing tasks on the training set to prepare the data for further analysis and modeling. We will apply the following steps:
+
+- Column encoding
+- Correlation analysis
+- Principal Component Analysis (PCA)
+- Imbalance data handling
+
+### Column encoding
+
+#### One-Hot Encoding
+
+In this section, we will perform one-hot encoding on the categorical variables in the dataset. One-hot encoding is a technique used to convert categorical variables into a numerical format that can be used in machine learning algorithms. This process involves creating binary columns for each category in a categorical variable.
+
+We will apply one-hot encoding to the following categorical variables: - `land_surface_condition` - `foundation_type` - `roof_type` - `ground_floor_type` - `other_floor_type` - `position`
+
+```{r}
+# Perform one-hot encoding
+## Convert categorical variables to binary columns
+
+df_one_hot <- train_data
+
+# Function to rename columns with a separator and create binary columns
+rename_columns <- function(column_names) {
+  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = train_data)
+  colnames(one_hot_data) <- paste(column_names, sub(column_names, "", colnames(one_hot_data)), sep = "_")
+  return(one_hot_data)
+}
+
+# Apply the function to each variable
+one_hot_roof_type <- rename_columns("roof_type")
+one_hot_land_surface_condition <- rename_columns("land_surface_condition")
+one_hot_foundation_type <- rename_columns("foundation_type")
+one_hot_ground_floor_type <- rename_columns("ground_floor_type")
+one_hot_other_floor_type <- rename_columns("other_floor_type")
+one_hot_position <- rename_columns("position")
+
+# Combine the original data frame with the renamed one-hot encoded columns
+
+df_one_hot <- cbind(
+  train_data,
+  one_hot_land_surface_condition,
+  one_hot_foundation_type,
+  one_hot_roof_type,
+  one_hot_ground_floor_type,
+  one_hot_other_floor_type,
+  one_hot_position
+) %>% select(-one_of(c("land_surface_condition", "foundation_type", "roof_type", 
+                   "ground_floor_type", "other_floor_type", "position")))
+
+# Convert one-hot encoded columns to integers
+df_one_hot[] <- lapply(df_one_hot, as.integer)
+
+```
+
+Let's take a look at the data after applying one-hot encoding.
+
+```{r}
+head(df_one_hot)
+dim(df_one_hot)
+str(df_one_hot)
+summary(df_one_hot)
+```
+
+At this point, we are going to generate a csv file with the data after one-hot encoding, in order to use it in the next steps.
+
+```{r}
+write.csv(df_one_hot, "../data/processed/train/onehot_train.csv", row.names = FALSE)
+```
+
+### Correlation analysis
+
+As we can see, after applying one-hot encoding, the number of columns has increased significantly. This transformation is necessary to convert categorical variables into a numerical format that can be used in machine learning algorithms. However, it is essential to check for correlation between the newly created binary columns, because maybe some of them are highly correlated and can be eliminated to reduce redundancy.
+
+```{r}
+df_correlation <- df_one_hot
+
+# Calculate the correlation matrix
+cor_matrix <- cor(df_correlation)
+
+# Define the threshold for high correlation
+threshold <- 0.75
+
+# Find pairs of highly correlated columns
+high_corr_pairs <- which(abs(cor_matrix) > threshold, arr.ind = TRUE)
+
+# Filter out the diagonal and duplicate pairs
+high_corr_pairs <- high_corr_pairs[high_corr_pairs[,1] < high_corr_pairs[,2], ]
+
+# Extract the column names of the highly correlated columns
+correlated_columns <- apply(high_corr_pairs, 1, function(pair) {
+  colnames(cor_matrix)[pair]
+})
+
+# See results
+correlated_columns
+```
+
+We have identified two pairs of highly correlated columns: - `land_surface_condition_n` and `position_s` - `land_surface_condition_t` and `position_t`
+
+Now, we have to decide which column to remove from each pair. We will remove the column with the lowest variance, as it is likely to contain less information.
+
+```{r}
+# Pair 1: land_surface_condition_n and position_s
+# Calculate the variances of the columns
+variances <- apply(df_correlation[, c("land_surface_condition_n", "position_s")], 2, var)
+
+# Sort the variances in descending order
+variances_sorted <- sort(variances, decreasing = TRUE)
+
+# View the variances
+print(variances_sorted)
+
+# land_surface_condition_n has a lower variance, so we will remove it
+df_correlation <- df_correlation %>% select(-land_surface_condition_n)
+
+
+# Pair 2: land_surface_condition_t and position_t
+# Calculate the variances of the columns
+variances <- apply(df_correlation[, c("land_surface_condition_t", "position_t")], 2, var)
+
+# Sort the variances in descending order
+variances_sorted <- sort(variances, decreasing = TRUE)
+
+# View the variances
+print(variances_sorted)
+
+# position_t has a lower variance, so we will remove it
+df_correlation <- df_correlation %>% select(-position_t)
+
+```
+
+At this point, we are going to generate a csv file with the data after eliminating the highly correlated columns, in order to use it in the next steps.
+
+```{r}
+write.csv(df_correlation, "../data/processed/train/filtered_onehot_train.csv", row.names = FALSE)
+```
+
+Finally, we are going to store the processed data in a new variable, in order to use it in the next steps.
+
+```{r}
+processed_data <- df_correlation
+```
+
+### Principal Component Analysis (PCA)
+
+PCA is a dimensionality reduction technique that transforms the data into a lower-dimensional space. This technique is useful for reducing the number of features in the dataset while retaining the most important information. In this section, we will perform PCA on the dataset to reduce the number of features.
+
+First of all, we will take a look at the data we have obtained after the previous steps.
+
+```{r}
+head(processed_data)
+dim(processed_data)
+str(processed_data)
+summary(processed_data)
+```
+
+Before applying PCA, we need to prepare the data by doing the following:
+
+-   Remove the target variable (`damage_grade`) from the dataset. We will add it back after applying PCA.
+-   Standardize the data as PCA is sensitive to the scale of the variables. We will use the `scale` function to standardize the numerical variables so that they have a mean of 0 and a standard deviation of 1.
+
+```{r}
+# Remove the target variable
+data_without_target <- processed_data %>% select(-damage_grade)
+
+# Standardize the data
+data_scaled <- scale(data_without_target)
+```
+
+Now, we can apply PCA to the standardized data. We will use the `prcomp` function to perform PCA and extract the principal components. We can also view the PCA results, including the rotation matrix, which shows the correlation between the original variables and the principal components.
+
+```{r}
+pca_result <- prcomp(data_scaled, center = TRUE, scale. = TRUE)
+
+# View the PCA results
+summary(pca_result)
+
+# Get the rotation matrix
+pca_result$rotation
+```
+
+Now, we must decide how many principal components to keep. There are several methods to determine the number of components to retain, such as the Kaiser criterion, scree plot, and cumulative explained variance. In this case, we will use the Kaiser criterion, which suggests retaining components with eigenvalues greater than 1.
+
+```{r}
+# Calculate the eigenvalues
+eigenvalues <- pca_result$sdev^2
+
+# View the eigenvalues
+eigenvalues
+
+# Select the components with eigenvalues greater than 1
+num_components <- sum(eigenvalues > 1)
+
+# Number of components to keep
+num_components
+```
+
+According to the Kaiser criterion, we should keep the first 13 principal components. We can extract these components from the PCA results and add the target variable back to the dataset after applying PCA.
+
+```{r}
+# Convert the principal components to a data frame
+pca_components_df <- as.data.frame(pca_result$x)
+
+# Extract the first 14 principal components
+pca_components <- pca_components_df[, 1:num_components]
+
+# Add the target variable back to the dataset
+pca_data <- cbind(pca_components, damage_grade = processed_data$damage_grade)
+
+head(pca_data)
+dim(pca_data)
+str(pca_data)
+summary(pca_data)
+```
+
+As a result, we have obtained a dataset with 13 principal components and the target variable `damage_grade` after applying PCA using the Kaiser criterion. This suposes a significant reduction in the number of features. We can use this dataset for further analysis and modeling in the next steps.
+
+At this point, we are going to generate a csv file with the data after applying PCA, in order to use it in the next steps.
+
+```{r}
+write.csv(pca_data, "../data/processed/train/pca_train.csv", row.names = FALSE)
+```
+
+### Imbalance data handling
+
+When working with imbalanced datasets, especially in predictive modeling, it is essential to address class imbalance to improve model performance and prevent biased results. There are numerous techniques available for balancing samples, including methods that generate synthetic data or assign weights to existing data points.
+
+#### Generate synthetic data
+
+For this study, we explored various approaches to balance the distribution of our target variable, `damage_grade`. Initially, our dataset displayed the following distribution:
+
+```{r}
+# Check the distribution of the target variable
+table(processed_data$damage_grade)
+```
+
+| 1   | 2    | 3    |
+|-----|------|------|
+| 594 | 1564 | 1043 |
+
+To mitigate the imbalance, we applied **SMOTE (Synthetic Minority Oversampling Technique)**. SMOTE is a well-known algorithm to fight this problem. The general idea of this method is to artificially generate new examples of the minority class using the nearest neighbors of these cases. Furthermore, the majority class examples are also under-sampled, leading to a more balanced dataset.
+
+First, we will check the distribution of the target variable `damage_grade` to confirm the imbalance in the dataset. Then, we will apply SMOTE to balance the data.
+
+As we can see, the dataset is imbalanced, with a higher number of buildings in damage grade 2 compared to the other grades. We will use the `smotefamily` package to apply SMOTE to balance the data.
+
+```{r}
+library(smotefamily)
+
+# Use damage_grade as factor
+processed_data$damage_grade <- as.factor(processed_data$damage_grade)
+
+# Apply SMOTE
+apply_smote <- function(data, target_column, K = 5, dup_size = 2) {
+  smote_result <- SMOTE(X = data[, -which(names(data) == target_column)],
+                        target = data[[target_column]],
+                        K = K,
+                        dup_size = dup_size)
+  return(as.data.frame(smote_result$data))
+}
+
+synthetic_data_smote <- apply_smote(processed_data, "damage_grade")
+synthetic_data_smote$class <- as.factor(synthetic_data_smote$class)
+
+smoted_df <- apply_smote(synthetic_data_smote, "class",dup_size = 1)
+smoted_df$class <- as.factor(smoted_df$class)
+smoted_df <- smoted_df %>%
+  rename(damage_grade = class)
+
+# Check the distribution of the target variable after applying SMOTE 2 times
+table(smoted_df$class)
+```
+
+| 1    | 2    | 3    |
+|------|------|------|
+| 1782 | 1564 | 2086 |
+
+The SMOTE algorithm has effectively increased the number of samples in the minority classes (damage grade 1 and 3) by generating synthetic data based on the nearest neighbors. As a result, the distribution becomes more equitable, enhancing the model’s ability to correctly classify instances across all damage grades. This approach, combining oversampling of the minority class and under-sampling of the majority class, maintains a better balance and helps reduce potential overfitting to the dominant class.
+
+At this point, we are going to generate a csv file with the data after applying SMOTE, in order to use it in the next steps.
+
+```{r}
+write.csv(smoted_df, "../data/processed/train/smote_train.csv", row.names = FALSE)
+```
+
+#### Weight allocation
+
+Another approach to handle imbalanced data is to assign weights to the samples based on their class distribution. By assigning higher weights to the minority class samples, we can emphasize their importance during model training and improve the model's ability to learn from these instances.
+
+```{r}
+# Calculate the frequency of each class
+class_freq <- table(processed_data$damage_grade)
+
+# Calculate the total number of samples
+total_samples <- sum(class_freq)
+
+# Calculate the inverse weights for each class (total_samples / class frequency)
+class_weights <- total_samples / (length(class_freq) * class_freq)
+
+# Assign the weights to the samples
+processed_data$weights <- sapply(processed_data$damage_grade, function(x) class_weights[as.character(x)])
+
+## Show the column damage_grade and weights for unique values
+unique(processed_data[, c("damage_grade", "weights")])
+
+# View the data with weights
+head(processed_data)
+```
+
+Now it is possible to use the weights assigned to each sample during model training to give more importance to the minority class instances. This approach helps to balance the impact of different classes on the model's learning process and improve the overall performance on imbalanced datasets.
+
+At this point, we are going to generate a csv file with the data after assigning weights, in order to use it in the next steps.
+
+```{r}
+write.csv(processed_data, "../data/processed/train/weighted_train.csv", row.names = FALSE)
+```
+
+## Test set preprocessing
+
+In the case of the test set, we need to apply the same preprocessing steps as the training set to ensure consistency and compatibility between the datasets. 
+
+### Column encoding
+
+#### One-Hot Encoding
+
+As we did with the training set, we will apply one-hot encoding to the categorical variables in the test set, which are: - `land_surface_condition` - `foundation_type` - `roof_type` - `ground_floor_type` - `other_floor_type` - `position`
+
+```{r}
+# Perform one-hot encoding
+## Convert categorical variables to binary columns
+
+df_one_hot_test <- test_data
+
+# Function to rename columns with a separator and create binary columns
+rename_columns <- function(column_names) {
+  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = test_data)
+  colnames(one_hot_data) <- paste(column_names, sub(column_names, "", colnames(one_hot_data)), sep = "_")
+  return(one_hot_data)
+}
+
+# Apply the function to each variable
+one_hot_roof_type <- rename_columns("roof_type")
+one_hot_land_surface_condition <- rename_columns("land_surface_condition")
+one_hot_foundation_type <- rename_columns("foundation_type")
+one_hot_ground_floor_type <- rename_columns("ground_floor_type")
+one_hot_other_floor_type <- rename_columns("other_floor_type")
+one_hot_position <- rename_columns("position")
+
+# Combine the original data frame with the renamed one-hot encoded columns
+
+df_one_hot_test <- cbind(
+  test_data,
+  one_hot_land_surface_condition,
+  one_hot_foundation_type,
+  one_hot_roof_type,
+  one_hot_ground_floor_type,
+  one_hot_other_floor_type,
+  one_hot_position
+) %>% select(-one_of(c("land_surface_condition", "foundation_type", "roof_type", 
+                   "ground_floor_type", "other_floor_type", "position")))
+
+# Convert one-hot encoded columns to integers
+df_one_hot_test[] <- lapply(df_one_hot_test, as.integer)
+
+```
+
+At this point, we are going to generate a csv file with the data after one-hot encoding, in order to use it in the next steps.
+
+```{r}
+write.csv(df_one_hot_test, "../data/processed/test/onehot_test.csv", row.names = FALSE)
+```
+
+### Correlation analysis
+
+As a result of the correlation analysis we performed on the training set, we decided to remove two columns from the dataset due to high correlation. We will apply the same decision to the test set to ensure consistency between the datasets. The columns to be removed are: - `land_surface_condition_n` - `position_t`
+
+```{r}
+df_correlation_test <- df_one_hot_test
+
+# Remove the highly correlated columns
+df_correlation_test <- df_correlation_test %>% select(-land_surface_condition_n)
+df_correlation_test <- df_correlation_test %>% select(-position_t)
+
+```
+
+At this point, we are going to generate a csv file with the data after eliminating the highly correlated columns, in order to use it in the next steps.
+
+```{r}
+write.csv(df_correlation_test, "../data/processed/test/filtered_onehot_test.csv", row.names = FALSE)
+```
+
+Finally, we are going to store the processed data in a new variable, in order to use it in the next steps.
+
+```{r}
+processed_data_test <- df_correlation_test
+```
+
+### Principal Component Analysis (PCA)
+
+We will apply PCA to the test set to reduce the number of features and ensure consistency with the training set. We will use the same number of principal components as the training set to maintain compatibility between the datasets.
+
+```{r}
+# Remove the target variable
+data_without_target_test <- processed_data_test %>% select(-damage_grade)
+
+# Standardize the data
+data_scaled_test <- scale(data_without_target_test)
+
+# Apply PCA to the standardized data
+pca_result_test <- prcomp(data_scaled_test, center = TRUE, scale. = TRUE)
+
+```
+
+As we did with the training set, we will keep the first 13 principal components, in order to obtain a dataset with the same number of features.
+
+```{r}
+# Number of components to keep
+num_components_test = 13
+
+# Convert the principal components to a data frame
+pca_components_df_test <- as.data.frame(pca_result_test$x)
+
+# Extract the first 13 principal components
+pca_components_test <- pca_components_df_test[, 1:num_components_test]
+
+# Add the target variable back to the dataset
+pca_data_test <- cbind(pca_components_test, damage_grade = processed_data_test$damage_grade)
+```
+
+At this point, we are going to generate a csv file with the data after applying PCA, in order to use it in the next steps.
+
+```{r}
+write.csv(pca_data_test, "../data/processed/test/pca_test.csv", row.names = FALSE)
+```
+
+### Imbalance data handling
+
+In the case of the test set, we will not apply SMOTE or weight allocation, as these techniques are used to balance the training set. We will be using the `filtered_onehot_test.csv` as the test set for the datasets generated with SMOTE and weight allocation, as this dataset has suffered the same preprocessing steps as the original dataset we used to apply SMOTE and weight allocation.
+
+## Unsupervised learning preprocessing
+
+In order to apply unsupervised learning techniques, we don't need to use a labeled dataset. Therefore, we will use all the original data extracted from ´raw_data_train.csv´ and ´raw_data_test.csv´ to apply unsupervised learning techniques. In fact, we will use the data after column unification, column elimination and one-hot encoding, as it is the most suitable for unsupervised learning.
+
+First, we will apply one-hot encoding to the cleaned data extracted from ´raw_data_train.csv´, which has suffered column unification and elimination yet. The following categorical variables will be one-hot encoded: - `land_surface_condition` - `foundation_type` - `roof_type` - `ground_floor_type` - `other_floor_type` - `position`
+
+```{r}
+# Perform one-hot encoding
+## Convert categorical variables to binary columns
+
+df_one_hot_unsupervised_train <- clean_data
+
+# Function to rename columns with a separator and create binary columns
+rename_columns <- function(column_names) {
+  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = clean_data)
+  colnames(one_hot_data) <- paste(column_names, sub(column_names, "", colnames(one_hot_data)), sep = "_")
+  return(one_hot_data)
+}
+
+# Apply the function to each variable
+one_hot_roof_type <- rename_columns("roof_type")
+one_hot_land_surface_condition <- rename_columns("land_surface_condition")
+one_hot_foundation_type <- rename_columns("foundation_type")
+one_hot_ground_floor_type <- rename_columns("ground_floor_type")
+one_hot_other_floor_type <- rename_columns("other_floor_type")
+one_hot_position <- rename_columns("position")
+
+# Combine the original data frame with the renamed one-hot encoded columns
+
+df_one_hot_unsupervised_train <- cbind(
+  clean_data,
+  one_hot_land_surface_condition,
+  one_hot_foundation_type,
+  one_hot_roof_type,
+  one_hot_ground_floor_type,
+  one_hot_other_floor_type,
+  one_hot_position
+) %>% select(-one_of(c("land_surface_condition", "foundation_type", "roof_type", 
+                   "ground_floor_type", "other_floor_type", "position")))
+
+# Convert one-hot encoded columns to integers
+df_one_hot_unsupervised_train[] <- lapply(df_one_hot_unsupervised_train, as.integer)
+
+```
+
+At this point, we are going to generate a csv file with the data after one-hot encoding, in order to use it in the next steps.
+
+```{r}
+write.csv(df_one_hot_unsupervised_train, "../data/processed/unsupervised/onehot_train.csv", row.names = FALSE)
+```
+
+Now, we will apply column unification, column elimination and one-hot encoding to the raw data extracted from ´raw_data_test.csv´.
+
+Column unification:
+
+```{r}
+# Load the data
+data_test <- read.csv("../data/raw/raw_data_test.csv")
+
+print("Before unification")
+# has_secondary_use = 0 number of samples
+print(data_test %>% filter(has_secondary_use == 0) %>% nrow())
+
+# has_secondary_use = 1 number of samples
+print(data_test %>% filter(has_secondary_use == 1) %>% nrow())
+
+## Remove the has_secondary_use column
+new_df_test <- data_test %>% select(-has_secondary_use)
+
+# Unify the has_secondary_use columns
+data_test <- new_df_test %>%
+  mutate(has_secondary_use = if_else(
+    rowSums(select(., starts_with("has_secondary_use_"))) > 0, 
+    1, 
+    0
+  ))
+
+print("After unification")
+
+# has_secondary_use = 0 number of samples
+print(data_test %>% filter(has_secondary_use == 0) %>% nrow())
+
+# has_secondary_use = 1 number of samples
+print(data_test %>% filter(has_secondary_use == 1) %>% nrow())
+```
+
+Column elimination:
+
+```{r}
+clean_data_test <- data_test %>%
+  select(-building_id, -plan_configuration, -legal_ownership_status, -count_families, -has_secondary_use_use_police, -has_secondary_use_gov_office, -has_secondary_use_health_post, -has_secondary_use_industry, -has_secondary_use_institution, -has_secondary_use_school, -has_secondary_use_other)
+```
+
+One-hot encoding:
+
+```{r}
+# Perform one-hot encoding
+## Convert categorical variables to binary columns
+
+df_one_hot_unsupervised_test <- clean_data_test
+
+# Function to rename columns with a separator and create binary columns
+rename_columns <- function(column_names) {
+  one_hot_data <- model.matrix(as.formula(paste("~", column_names, "- 1")), data = clean_data_test)
+  colnames(one_hot_data) <- paste(column_names, sub(column_names, "", colnames(one_hot_data)), sep = "_")
+  return(one_hot_data)
+}
+
+# Apply the function to each variable
+one_hot_roof_type <- rename_columns("roof_type")
+one_hot_land_surface_condition <- rename_columns("land_surface_condition")
+one_hot_foundation_type <- rename_columns("foundation_type")
+one_hot_ground_floor_type <- rename_columns("ground_floor_type")
+one_hot_other_floor_type <- rename_columns("other_floor_type")
+one_hot_position <- rename_columns("position")
+
+# Combine the original data frame with the renamed one-hot encoded columns
+
+df_one_hot_unsupervised_test <- cbind(
+  clean_data_test,
+  one_hot_land_surface_condition,
+  one_hot_foundation_type,
+  one_hot_roof_type,
+  one_hot_ground_floor_type,
+  one_hot_other_floor_type,
+  one_hot_position
+) %>% select(-one_of(c("land_surface_condition", "foundation_type", "roof_type", 
+                   "ground_floor_type", "other_floor_type", "position")))
+
+# Convert one-hot encoded columns to integers
+df_one_hot_unsupervised_test[] <- lapply(df_one_hot_unsupervised_test, as.integer)
+
+```
+
+At this point, we are going to generate a csv file with the data after one-hot encoding, in order to use it in the next steps.
+
+```{r}
+write.csv(df_one_hot_unsupervised_test, "../data/processed/unsupervised/onehot_test.csv", row.names = FALSE)
+```
